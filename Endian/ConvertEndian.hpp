@@ -66,6 +66,17 @@ void ConvertEndianType2Data(char *cpData, const T &tType, bool bDataNeedBigEndia
 %% %
 */
 
+#define ConvertType2Data(ap, type, bigendian, target, targetsize, targetcurrent)\
+{\
+	type tArg = va_arg(ap, type);\
+	if(targetcurrent + sizeof(type) >= targetsize)\
+	{\
+		return targetcurrent;\
+	}\
+	ConvertEndianType2Data(target + targetcurrent, tArg, bigendian);\
+	targetcurrent += sizeof(type);\
+}
+
 size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)//无所谓signed和unsigned，内部统一按照unsigned处理
 {
 	va_list ap;//转换 std::nullptr_t 到 void*(C++11 起)，转换 float 到 double，转换 bool、char、short 及无作用域 (C++11 起)枚举到 int
@@ -77,9 +88,9 @@ size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)
 	while (*pTemp != '\0')
 	{
 		bIsString = false;
-		if (*pTemp != '%')
+		if (*pTemp != '%' || *(++pTemp) == '%')//如果不为%则递增查看下一个，如果也是%就转义成%（即如果是%则一定递增查看下一个，下一个不为%就进入switch处理）
 		{
-			if (ulCurrent + sizeof(*pTarget) > szTargetSize)
+			if (ulCurrent + sizeof(*pTarget) >= szTargetSize)
 			{
 				pTarget[ulCurrent] = '\0';
 				return ++ulCurrent;
@@ -91,22 +102,14 @@ size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)
 			++pTemp;
 			continue;
 		}
-
-		++pTemp;
+		
 		bool bIsBigEndian = isupper(*pTemp);
 		switch (tolower(*pTemp))
 		{
 		case 'f'://float
 		case 'd'://double
 			{
-				double dArg = va_arg(ap, double);
-				if (ulCurrent + sizeof(dArg) >= szTargetSize)
-				{
-					return ulCurrent;
-				}
-
-				ConvertEndianType2Data(pTarget + ulCurrent, dArg, bIsBigEndian);
-				ulCurrent += sizeof(dArg);
+				ConvertType2Data(ap, double, bIsBigEndian, pTarget, szTargetSize, ulCurrent);
 			}
 			break;
 		case 'b'://bool
@@ -114,58 +117,29 @@ size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)
 		case 's'://short
 		case 'i'://int
 			{
-				unsigned int uiArg = va_arg(ap, unsigned int);
-				if (ulCurrent + sizeof(uiArg) < szTargetSize)
-				{
-					return ulCurrent;
-				}
-
-				ConvertEndianType2Data(pTarget + ulCurrent, uiArg, bIsBigEndian);
-				ulCurrent += sizeof(uiArg);
+				ConvertType2Data(ap, unsigned int, bIsBigEndian, pTarget, szTargetSize, ulCurrent);
 			}
 			break;
 		case 'p'://pointer
 			{
-				void *pArg = va_arg(ap, void *);
-				if (ulCurrent + sizeof(pArg) < szTargetSize)
-				{
-					return ulCurrent;
-				}
-
-				ConvertEndianType2Data(pTarget + ulCurrent, pArg, bIsBigEndian);
-				ulCurrent += sizeof(pArg);
+				ConvertType2Data(ap, void *, bIsBigEndian, pTarget, szTargetSize, ulCurrent);
 			}
 			break;
 		case 'l'://long
 			{
-				unsigned long ulArg = va_arg(ap, unsigned long);
-				if (ulCurrent + sizeof(ulArg) < szTargetSize)
-				{
-					return ulCurrent;
-				}
-
-				ConvertEndianType2Data(pTarget + ulCurrent, ulArg, bIsBigEndian);
-				ulCurrent += sizeof(ulArg);
+				ConvertType2Data(ap, unsigned long, bIsBigEndian, pTarget, szTargetSize, ulCurrent);
 			}
 			break;
 		case 'g'://long long
 			{
-				unsigned long long ullArg = va_arg(ap, unsigned long long);
-				if (ulCurrent + sizeof(ullArg) < szTargetSize)
-				{
-					return ulCurrent;
-				}
-
-				ConvertEndianType2Data(pTarget + ulCurrent, ullArg, bIsBigEndian);
-				ulCurrent += sizeof(ullArg);
+				ConvertType2Data(ap, unsigned long long, bIsBigEndian, pTarget, szTargetSize, ulCurrent);
 			}
 			break;
 		case 'r'://str
 			{
-				char *pArg = va_arg(ap, char *);
-				while (*pArg != '%')
+				for (char *pArg = va_arg(ap, char *); *pArg != '\0'; ++pArg)
 				{
-					if (ulCurrent + sizeof(*pTarget) > szTargetSize)
+					if (ulCurrent + sizeof(*pTarget) >= szTargetSize)
 					{
 						pTarget[ulCurrent] = '\0';
 						return ++ulCurrent;
@@ -176,20 +150,6 @@ size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)
 					++ulCurrent;
 					++pTemp;
 				}
-			}
-			break;
-		case '%'://%转义序列
-			{
-				if (ulCurrent + sizeof(*pTarget) > szTargetSize)
-				{
-					pTarget[ulCurrent] = '\0';
-					return ++ulCurrent;
-				}
-
-				bIsString = true;
-				pTarget[ulCurrent] = '%';
-				++ulCurrent;
-				++pTemp;
 			}
 			break;
 		default:
@@ -203,8 +163,16 @@ size_t BinStrPrint(char *pTarget, size_t szTargetSize, const char *pFormat, ...)
 
 	if (bIsString)
 	{
-		pTarget[ulCurrent] = '\0';
-		++ulCurrent;
+		if (ulCurrent + sizeof(*pTarget) >= szTargetSize)//超了就在末尾截断
+		{
+			pTarget[ulCurrent] = '\0';
+			++ulCurrent;
+		}
+		else//否则在下一个位置放上\0
+		{
+			++ulCurrent;
+			pTarget[ulCurrent] = '\0';
+		}		
 	}
 
 	va_end(ap);
