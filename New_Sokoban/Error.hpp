@@ -65,7 +65,12 @@ public:
 
 	operator bool(void)//默认转换以便直接通过if判断
 	{
-		return bIsError;
+		return !bIsError;//返回程序运行结果
+	}
+
+	bool operator!(void)
+	{
+		return bIsError;//直接返回是否发生错误
 	}
 
 	int PrintError(FILE *fOut)

@@ -2,60 +2,222 @@
 
 #include "Error.hpp"
 #include <new>
+#include <initializer_list>
 
 template<typename DataType>
 class List
 {
-public:
+protected:
+	//节点声明
 	struct Node
 	{
 		Node *pPrev;//上一个节点
 		Node *pNext;//下一个节点
 		DataType tData;//数据
 	};
-
+private:
+	Node *pHead;//头部
+	Node *pTail;//尾部
+	size_t szNodeNum;//元素个数计数
+public:
+	//迭代器
 	class Iterator//迭代器
 	{
 	private:
+		friend class List;//设置主类为友元类
 		Node *pCurrent;
+	protected:
+		//构造(只允许主类和继承类使用Node构造)
+		Iterator(Node *_pcurrent = nullptr) : pCurrent(_pcurrent)
+		{}
 	public:
-		Iterator(Node *_pcurrent) :pCurrent(_pcurrent)
+		//拷贝构造
+		Iterator(const Iterator &_Iterator) :pCurrent(_Iterator.pCurrent)
 		{}
 
+		//移动构造
+		Iterator(Iterator &&_Iterator) :pCurrent(_Iterator.pCurrent)
+		{
+			_Iterator.pCurrent = nullptr;
+		}
+
+		//默认析构（平凡析构类）
+		~Iterator(void) = default;
+
+		//前缀递增
 		Iterator &operator++(void)//无int是前缀递增
 		{
-			pCurrent = pCurrent->pNext;
+			if (pCurrent != nullptr)
+			{
+				pCurrent = pCurrent->pNext;
+			}
 			return *this;
 		}
 
+		//前缀递减
 		Iterator &operator--(void)//无int是前缀递减
 		{
-			pCurrent = pCurrent->pPrev;
+			if (pCurrent != nullptr)
+			{
+				pCurrent = pCurrent->pPrev;
+			}
 			return *this;
 		}
 
-		Node &operator*(void)
+		//后缀递增
+		Iterator operator++(int)//有int是后缀递增
 		{
-			return *pCurrent;
+			Node *pLast = pCurrent;//保存原来的
+			if (pCurrent != nullptr)
+			{
+				pCurrent = pCurrent->pNext;//前进到下一个
+			}
+			return pLast;//返回原来的
 		}
 
+		//后缀递减
+		Iterator operator--(int)//有int是后缀递减
+		{
+			Node *pLast = pCurrent;//保存原来的
+			if (pCurrent != nullptr)
+			{
+				pCurrent = pCurrent->pPrev;//后退到上一个
+			}
+			return pLast;//返回原来的
+		}
+
+		//从当前点往后_szAdd个点
+		Iterator operator+(size_t _szAdd)
+		{
+			Node *pAddNode = pCurrent;//保持原来的不变
+			while (pAddNode != nullptr)//依次迭代
+			{
+				if (_szAdd == 0)
+				{
+					break;//找到要的了
+				}
+				//递减然后访问下一个元素
+				--_szAdd;
+				pAddNode = pAddNode->pNext;
+			}
+			return pAddNode;//返回最新的
+		}
+
+		//从当前点往前_szDel个点
+		Iterator operator-(size_t _szDel)
+		{
+			Node *pRemove = pCurrent;//保持原来的不变
+			while (pRemove != nullptr)//依次迭代
+			{
+				if (_szDel == 0)
+				{
+					break;//找到要的了
+				}
+				//递减然后访问上一个元素
+				--_szDel;
+				pRemove = pRemove->pPrev;
+			}
+			return pRemove;//返回最新的
+		}
+
+		//解引用获取Data
+		DataType &operator*(void)
+		{
+			return pCurrent->tData;//不判断了，如果用户解引用nullptr直接让程序炸
+		}
+		
+		//不等判断
 		bool operator!=(Iterator &_rRight)
 		{
 			return pCurrent != _rRight.pCurrent;
 		}
+		
+		//相等判断
+		bool operator==(Iterator &_rRight)
+		{
+			return pCurrent == _rRight.pCurrent;
+		}
+
+		//迭代器有效性检测（检测pCurrent是不是nullptr）
+		operator bool(void)
+		{
+			return pCurrent != nullptr;
+		}
+
+		//迭代器有效性检测（检测pCurrent是不是nullptr）
+		bool operator!(void)
+		{
+			return pCurrent == nullptr;
+		}
 	};
-private:
-	Node *pHead;//头部
-	Node *pTail;//尾部
-public:
-	List(void) :pHead(nullptr), pTail(nullptr)
+
+	//默认无参构造
+	List(void) :pHead(nullptr), pTail(nullptr), szNodeNum(0)
 	{}
 
+	//从一个data元素构造
+	List(const DataType &_tData) :pHead(nullptr), pTail(nullptr), szNodeNum(0)
+	{
+		InsertTail(_tData);//插入
+	}
+
+	//从一个初始化列表构造
+	List(const std::initializer_list<DataType> &_tInitDataList) :pHead(nullptr), pTail(nullptr), szNodeNum(0)
+	{
+		for (auto &it : _tInitDataList)//遍历整个列表
+		{
+			if (!InsertTail(it))//依次插入
+			{
+				return;//失败提前返回
+			}
+		}
+	}
+
+	//拷贝构造
+	List(const List &_List) :pHead(nullptr), pTail(nullptr), szNodeNum(0)
+	{
+		Node *pAdd = _List.pHead;
+		while (pAdd != nullptr)//遍历整个结构
+		{
+			if (!InsertTail(pAdd->tData))//插入到自身
+			{
+				break;//失败返回
+			}
+			pAdd = pAdd->pNext;//访问下一个
+		}
+	}
+
+	//移动构造
+	List(List &&_List) :pHead(_List.pHead), pTail(_List.pTail), szNodeNum(_List.szNodeNum)
+	{
+		_List.pHead = nullptr;
+		_List.pTail = nullptr;
+		_List.szNodeNum = 0;
+	}
+
+	//析构
 	~List(void)
 	{
 		RemoveAll();
 	}
 
+	//赋值
+	List &operator=(const List &_List)
+	{
+		RemoveAll();
+		Node *pAdd = _List.pHead;
+		while (pAdd != nullptr)//遍历整个结构
+		{
+			if (!InsertTail(pAdd->tData))//插入到自身
+			{
+				break;//失败返回
+			}
+			pAdd = pAdd->pNext;//访问下一个
+		}
+		return *this;
+	}
+
+	//删除所有元素，清空链表
 	void RemoveAll(void)
 	{
 		Node *pDel = pHead;
@@ -67,13 +229,21 @@ public:
 		}
 		pHead = nullptr;
 		pTail = nullptr;
+		szNodeNum = 0;
 	}
 
+	//获取Node个数
+	size_t GetNodeNum(void)
+	{
+		return szNodeNum;
+	}
+
+	//头插
 	Error InsertHead(const DataType &tData)
 	{
 		//分配并初始化
-		Node *pNewNode = new(std::nothrow) Node{nullptr,pHead,tData};
-		if (pNewNode == nullptr)
+		Node *pInsert = new(std::nothrow) Node{nullptr,pHead,tData};
+		if (pInsert == nullptr)
 		{
 			return Error(true, 0, __FUNCTION__, "内存不足");
 		}
@@ -81,26 +251,30 @@ public:
 		//设置头节点指向前一个节点的指针为当前分配的节点
 		if (pHead != nullptr)
 		{
-			pHead->pPrev = pNewNode;
+			pHead->pPrev = pInsert;
 		}
 
 		//设置头节点为新节点
-		pHead = pNewNode;
+		pHead = pInsert;
 
 		//设置尾节点
 		if (pTail == nullptr)
 		{
-			pTail = pNewNode;
+			pTail = pInsert;
 		}
+
+		//递增元素计数
+		++szNodeNum;
 
 		return Error(false);
 	}
 
+	//尾插
 	Error InsertTail(const DataType &tData)
 	{
 		//分配并初始化
-		Node *pNewNode = new(std::nothrow) Node{pTail,nullptr,tData};
-		if (pNewNode == nullptr)
+		Node *pInsert = new(std::nothrow) Node{pTail,nullptr,tData};
+		if (pInsert == nullptr)
 		{
 			return Error(true, 0, __FUNCTION__, "内存不足");
 		}
@@ -108,21 +282,63 @@ public:
 		//设置尾节点的后一个节点指针为当前分配的节点
 		if (pTail != nullptr)
 		{
-			pTail->pNext = pNewNode;
+			pTail->pNext = pInsert;
 		}
 
 		//设置尾节点为新节点
-		pTail = pNewNode;
+		pTail = pInsert;
 
 		//设置头节点
 		if (pHead == nullptr)
 		{
-			pHead = pNewNode;
+			pHead = pInsert;
 		}
+
+		//递增元素计数
+		++szNodeNum;
 
 		return Error(false);
 	}
 
+	//中间插入(在itpos指向的元素后插入)
+	Error InsertMid(const DataType &tData, Iterator &itPos)
+	{
+		Node *pInsert = itPos.pCurrent;//在这个位置后插入
+		if (pInsert == nullptr)
+		{
+			return Error(true, 1, __FUNCTION__, "迭代器为空");
+		}
+
+		//分配并初始化
+		Node *pInsert = new(std::nothrow) Node{pInsert,pInsert->pNext,tData};
+		if (pInsert == nullptr)
+		{
+			return Error(true, 0, __FUNCTION__, "内存不足");
+		}
+
+		//如果存在下一个节点，那么下一个节点的上一个节点为新节点
+		if (pInsert->pNext != nullptr)
+		{
+			pInsert->pNext->pPrev = pInsert;
+		}
+		else//如果不存在下一个节点，即当前节点是尾节点
+		{
+			pTail = pInsert;//设置尾节点为新插入的节点
+		}
+
+		//设置插入点的下一个节点为新节点
+		pInsert->pNext = pInsert;
+
+		//递增元素计数
+		++szNodeNum;
+
+		//递增itPos使其指向新插入的节点
+		++itPos;
+
+		return Error(false);
+	}
+
+	//头删
 	Error RemoveHead(void)
 	{
 		if (pHead == nullptr)
@@ -131,7 +347,7 @@ public:
 		}
 
 		//保存头部指针
-		Node *pDelNode = pHead;
+		Node *pRemove = pHead;
 
 		//设置指针
 		pHead = pHead->pNext;
@@ -145,12 +361,16 @@ public:
 		}
 
 		//删除
-		delete pDelNode;
-		pDelNode = nullptr;
+		delete pRemove;
+		pRemove = nullptr;
+
+		//递减元素计数
+		--szNodeNum;
 
 		return Error(false);
 	}
 
+	//尾删
 	Error RemoveTail(void)
 	{
 		if (pHead == nullptr)
@@ -159,7 +379,7 @@ public:
 		}
 
 		//保存尾部指针
-		Node *pDelNode = pTail;
+		Node *pRemove = pTail;
 
 		//设置指针
 		pTail = pTail->pPrev;
@@ -173,12 +393,58 @@ public:
 		}
 
 		//删除
-		delete pDelNode;
-		pDelNode = nullptr;
+		delete pRemove;
+		pRemove = nullptr;
+
+		//递减元素计数
+		--szNodeNum;
 
 		return Error(false);
 	}
 
+	//中间删除
+	Error RemoveMid(Iterator &itPos)
+	{
+		Node *pRemove = itPos.pCurrent;
+		if (pRemove == nullptr)
+		{
+			return Error(true, 1, __FUNCTION__, "迭代器为空");
+		}
+
+		//让它引用下一个元素
+		++itPos;
+
+		//设置前节点指向后一个节点指针为要删除节点后一个节点的指针
+		if (pRemove->pPrev != nullptr)
+		{
+			pRemove->pPrev->pNext = pRemove->pNext;
+		}
+		else//要删除节点是头节点
+		{
+			pHead = pRemove->pNext;//设置头节点指向要删除节点的下一个节点
+		}
+
+		//设置后节点指向前一个节点的指针为要删除节点前一个节点的指针
+		if (pRemove->pNext != nullptr)
+		{
+			pRemove->pNext->pPrev = pRemove->pPrev;
+		}
+		else//要删除节点是尾节点
+		{
+			pTail = pRemove->pPrev;//设置尾节点指向要删除节点的上一个节点
+		}
+		
+		//删除
+		delete pRemove;
+		pRemove = nullptr;
+
+		//递减元素计数
+		--szNodeNum;
+
+		return Error(false);
+	}
+
+	//移动头部到目标结构
 	Error MoveHeadTo(List &rTargetList)
 	{
 		if (pHead == nullptr)
@@ -187,7 +453,7 @@ public:
 		}
 
 		//保存头部指针
-		Node *pDelNode = pHead;
+		Node *pRemove = pHead;
 
 		//从源链表中删除目标元素但不释放
 		pHead = pHead->pNext;
@@ -201,30 +467,34 @@ public:
 		}
 
 		//设置指针
-		Node *&pNewNode = pDelNode;
+		Node *&pInsert = pRemove;
 
-		pNewNode->pPrev = nullptr;
-		pNewNode->pNext = rTargetList.pHead;
+		pInsert->pPrev = nullptr;
+		pInsert->pNext = rTargetList.pHead;
 
 		//添加到目标链表
 		//设置头节点指向前一个节点的指针为当前的节点
 		if (rTargetList.pHead != nullptr)
 		{
-			rTargetList.pHead->pPrev = pNewNode;
+			rTargetList.pHead->pPrev = pInsert;
 		}
 
 		//设置头节点为新节点
-		rTargetList.pHead = pNewNode;
+		rTargetList.pHead = pInsert;
 
 		//设置尾节点
 		if (rTargetList.pTail == nullptr)
 		{
-			rTargetList.pTail = pNewNode;
+			rTargetList.pTail = pInsert;
 		}
+
+		//递减元素计数
+		--szNodeNum;
 
 		return Error(false);
 	}
 
+	//移动尾部到目标结构
 	Error MoveTailTo(List &rTargetList)
 	{
 		if (pTail == nullptr)
@@ -233,7 +503,7 @@ public:
 		}
 
 		//保存尾部指针
-		Node *pDelNode = pTail;
+		Node *pRemove = pTail;
 
 		//从源链表中删除目标元素但不释放
 		pTail = pTail->pPrev;
@@ -247,63 +517,52 @@ public:
 		}
 
 		//设置指针
-		Node *&pNewNode = pDelNode;
+		Node *&pInsert = pRemove;
 
-		pNewNode->pPrev = rTargetList.pTail;
-		pNewNode->pNext = nullptr;
+		pInsert->pPrev = rTargetList.pTail;
+		pInsert->pNext = nullptr;
 
 		//添加到目标链表
 		//设置尾节点指向后一个节点的指针为当前的节点
 		if (rTargetList.pTail != nullptr)
 		{
-			rTargetList.pTail->pNext = pNewNode;
+			rTargetList.pTail->pNext = pInsert;
 		}
 
 		//设置尾节点为新节点
-		rTargetList.pTail = pNewNode;
+		rTargetList.pTail = pInsert;
 
 		//设置头节点
 		if (rTargetList.pHead == nullptr)
 		{
-			rTargetList.pHead = pNewNode;
+			rTargetList.pHead = pInsert;
 		}
+
+		//递减元素计数
+		--szNodeNum;
 
 		return Error(false);
 	}
 
-	DataType *GetHead(void)
-	{
-		if (pHead == nullptr)
-		{
-			return nullptr;
-		}
-		return &pHead->tData;
-	}
-
-	DataType *GetTail(void)
-	{
-		if (pTail == nullptr)
-		{
-			return nullptr;
-		}
-		return &pTail->tData;
-	}
-
+	//迭代器开始
 	Iterator begin(void)
 	{
 		return Iterator(pHead);
 	}
 
-	Iterator rbegin(void)
-	{
-		return Iterator(pTail);
-	}
-
+	//迭代器结束
 	Iterator end(void)
 	{
 		return Iterator(nullptr);
 	}
 
+	//反向迭代器开始
+	Iterator rbegin(void)
+	{
+		return Iterator(pTail);
+	}
+
+	//反向迭代器结束
 	Iterator rend(void)
 	{
 		return Iterator(nullptr);
