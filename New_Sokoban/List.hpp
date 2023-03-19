@@ -87,7 +87,7 @@ public:
 		}
 
 		//从当前点往后_szAdd个点
-		Iterator operator+(size_t _szAdd)
+		Iterator operator+(size_t _szAdd) const
 		{
 			Node *pAddNode = pCurrent;//保持原来的不变
 			while (pAddNode != nullptr)//依次迭代
@@ -104,7 +104,7 @@ public:
 		}
 
 		//从当前点往前_szDel个点
-		Iterator operator-(size_t _szDel)
+		Iterator operator-(size_t _szDel) const
 		{
 			Node *pRemove = pCurrent;//保持原来的不变
 			while (pRemove != nullptr)//依次迭代
@@ -121,31 +121,31 @@ public:
 		}
 
 		//解引用获取Data
-		DataType &operator*(void)
+		DataType &operator*(void) const
 		{
 			return pCurrent->tData;//不判断了，如果用户解引用nullptr直接让程序炸
 		}
 		
 		//不等判断
-		bool operator!=(Iterator &_rRight)
+		bool operator!=(Iterator &_rRight) const
 		{
 			return pCurrent != _rRight.pCurrent;
 		}
 		
 		//相等判断
-		bool operator==(Iterator &_rRight)
+		bool operator==(Iterator &_rRight) const
 		{
 			return pCurrent == _rRight.pCurrent;
 		}
 
 		//迭代器有效性检测（检测pCurrent是不是nullptr）
-		operator bool(void)
+		operator bool(void) const
 		{
 			return pCurrent != nullptr;
 		}
 
 		//迭代器有效性检测（检测pCurrent是不是nullptr）
-		bool operator!(void)
+		bool operator!(void) const
 		{
 			return pCurrent == nullptr;
 		}
@@ -218,8 +218,21 @@ public:
 	}
 
 	//删除所有元素，清空链表
-	void RemoveAll(void)
+	Error RemoveAll(void)
 	{
+		if (pHead == nullptr && pTail == nullptr)
+		{
+			return Error(true, 1, __FUNCTION__, "链表已经为空");
+		}
+		else if (pHead != nullptr && pTail == nullptr)//不同步
+		{
+			return Error(true, 0, __FUNCTION__, "链表数据不同步");
+		}
+		else if (pHead == nullptr && pTail != nullptr)//不同步
+		{
+			return Error(true, 0, __FUNCTION__, "链表数据不同步");
+		}
+
 		Node *pDel = pHead;
 		while (pDel != nullptr)//遍历删除所有元素
 		{
@@ -227,13 +240,17 @@ public:
 			delete pDel;
 			pDel = pHead;
 		}
+		
+		//置空链表
 		pHead = nullptr;
 		pTail = nullptr;
 		szNodeNum = 0;
+
+		return Error(false);
 	}
 
 	//获取Node个数
-	size_t GetNodeNum(void)
+	size_t GetNodeNum(void) const
 	{
 		return szNodeNum;
 	}
@@ -545,25 +562,25 @@ public:
 	}
 
 	//迭代器开始
-	Iterator begin(void)
+	Iterator begin(void) const
 	{
 		return Iterator(pHead);
 	}
 
 	//迭代器结束
-	Iterator end(void)
+	Iterator end(void) const
 	{
 		return Iterator(nullptr);
 	}
 
 	//反向迭代器开始
-	Iterator rbegin(void)
+	Iterator rbegin(void) const
 	{
 		return Iterator(pTail);
 	}
 
 	//反向迭代器结束
-	Iterator rend(void)
+	Iterator rend(void) const
 	{
 		return Iterator(nullptr);
 	}
