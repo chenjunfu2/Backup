@@ -13,14 +13,14 @@
 #include "Map.hpp"
 
 #define MAP_SYMBOL_COUNT 5
-#define MAP_SYMBOL_LEN 3
+#define MAP_SYMBOL_LEN 2
 
 class Map_Draw//地图绘制
 {
 public:
 	struct Symbol
 	{
-		char cStr[MAP_SYMBOL_LEN];//每种字符占用2个字节，用于输出符号
+		char cStr[MAP_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
@@ -103,18 +103,18 @@ public:
 #include "Player.hpp"
 
 #define PLAYER_SYMBOL_COUNT 2
-#define PLAYER_SYMBOL_LEN 3
+#define PLAYER_SYMBOL_LEN 2
 
 class Player_Draw//玩家绘制
 {
 public:
 	struct Symbol
 	{
-		char cStr[PLAYER_SYMBOL_LEN];//每种字符占用2个字节，用于输出符号
+		char cStr[PLAYER_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
-	Symbol stSymbol[PLAYER_SYMBOL_LEN];//2种符号
+	Symbol stSymbol[PLAYER_SYMBOL_COUNT];//2种符号
 	OutputConsole &csConsole;//控制台对象
 public:
 	Player_Draw(const Symbol *_pstSymbol, OutputConsole &_csConsole) :
