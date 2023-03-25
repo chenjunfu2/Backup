@@ -1,89 +1,91 @@
 #pragma once
-#include "List.hpp"
-#include <string.h>
-#include <new>
+#include <stddef.h>
 
-#define SYMBOL_COUNT 7
-#define SYMBOL_STR_LEN 3
+/*
+//地图符号
+0：空地"  "
+1：墙壁"■"
+2：目的地"☆" "○"
+3：箱子"□"
+4：箱子在目的地"★" "●"
+*/
 
-class Map
+class Map//仅用于管理，不做内存分配与释放
 {
-private:
-	unsigned char *pMap;//地图数组
-	char cSymbol[SYMBOL_COUNT][SYMBOL_STR_LEN];//7个字符，每种字符占用3个字节，前两个字节是符号，最后一个是空字符
-	const size_t szMapWidth;
-	const size_t szMapHight;
 public:
-	Map(
-		const unsigned char *_pMap,
-		size_t _szMapWidth,
-		size_t _szMapHight,
-		const char*_cSymbol) :
-		pMap(nullptr),
-		cSymbol{0},
-		szMapWidth(_szMapWidth),
-		szMapHight(_szMapHight)
+	enum Block
 	{
-		pMap = new(std::nothrow) unsigned char[szMapWidth * szMapHight];
-		if (pMap == nullptr)
-		{
-			return;
-		}
+		Blank = 0,		//0：空地"  "
+		Wall = 1,		//1：墙壁"■"
+		Destn = 2,		//2：目的地"☆" "○"
+		BoxInBlank = 3,	//3：箱子"□"
+		BoxInDestn = 4,	//4：箱子在目的地"★" "●"
+	};
+private:
+	Block *pMap;//地图数组
+	long lMapWidth;//地图宽高
+	long lMapHight;
 
-		memcpy(pMap, _pMap, szMapWidth *szMapHight);
-		memcpy(cSymbol, _cSymbol, sizeof(cSymbol));
+	long lAllBoxNum;//箱子总数
+	long lDestnBoxNum;//在终点的箱子数
+public:
+	Map(Block *_pMap, long _szMapWidth, long _szMapHight) :
+		pMap(_pMap), lMapWidth(_szMapWidth), lMapHight(_szMapHight)
+	{
+		for (long long i = 0; i < lMapWidth * lMapHight; ++i)
+		{
+			if (pMap[i] == BoxInBlank)
+			{
+				++lAllBoxNum;//递增总数
+			}
+			else if (pMap[i] == BoxInDestn)
+			{
+				++lAllBoxNum;
+				++lDestnBoxNum;//递增在终点的箱子数
+			}
+		}
 	}
 
-	Map(const Map &_Map) :pMap(nullptr), cSymbol{0}, szMapWidth(_Map.szMapWidth), szMapHight(_Map.szMapHight)
-	{
-		pMap = new(std::nothrow) unsigned char[szMapWidth * szMapHight];
-		if (pMap == nullptr)
-		{
-			return;
-		}
+	Map(const Map &_Map) :
+		pMap(_Map.pMap), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
+		lAllBoxNum(_Map.lAllBoxNum), lDestnBoxNum(_Map.lDestnBoxNum)
+	{}
 
-		memcpy(pMap, _Map.pMap, szMapWidth * szMapHight);
-		memcpy(cSymbol, _Map.cSymbol, sizeof(cSymbol));
-	}
-
-	Map(Map &&_Map) :pMap(_Map.pMap), cSymbol{0}, szMapWidth(_Map.szMapWidth), szMapHight(_Map.szMapHight)
+	Map(Map &&_Map) :
+		pMap(_Map.pMap), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
+		lAllBoxNum(_Map.lAllBoxNum), lDestnBoxNum(_Map.lDestnBoxNum)
 	{
-		memcpy(cSymbol, _Map.cSymbol, sizeof(cSymbol));
 		_Map.pMap = nullptr;
+		_Map.lMapWidth = 0;
+		_Map.lMapHight = 0;
+		_Map.lAllBoxNum = 0;
+		_Map.lDestnBoxNum = 0;
 	}
 
-	~Map(void)
+	~Map(void) = default;
+
+	Block &operator()(long x, long y) const//访问多维数组
 	{
-		delete[] pMap;
+		return pMap[y * lMapWidth + x];
 	}
 
-	void SetMap(const unsigned char *_pMap)
+	long Width(void) const
 	{
-		memcpy(pMap, _pMap, szMapWidth * szMapHight);
+		return lMapWidth;
 	}
 
-	void SetSymbol(const char *_cSymbol)
+	long Hight(void) const
 	{
-		memcpy(cSymbol, _cSymbol, sizeof(cSymbol));
+		return lMapHight;
 	}
 
-	const char(*GetSymbol(void) const)[SYMBOL_COUNT][SYMBOL_STR_LEN]//返回数组指针
+	long AllBoxNum(void) const
 	{
-		return &cSymbol;
+		return lAllBoxNum;
 	}
 
-	size_t GetWidth(void)
+	long &DestnBoxNum(void)
 	{
-		return szMapWidth;
-	}
-
-	size_t GetHight(void)
-	{
-		return szMapHight;
-	}
-
-	unsigned char &operator()(size_t x, size_t y)//访问多维数组
-	{
-		return pMap[y * szMapWidth + x];
+		return lDestnBoxNum;
 	}
 };

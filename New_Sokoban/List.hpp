@@ -462,7 +462,7 @@ public:
 	}
 
 	//移动头部到目标结构
-	Error MoveHeadTo(List &rTargetList)
+	Error MoveHeadToHead(List &rTargetList)
 	{
 		if (pHead == nullptr)
 		{
@@ -512,7 +512,7 @@ public:
 	}
 
 	//移动尾部到目标结构
-	Error MoveTailTo(List &rTargetList)
+	Error MoveTailToTail(List &rTargetList)
 	{
 		if (pTail == nullptr)
 		{
@@ -557,6 +557,34 @@ public:
 
 		//递减元素计数
 		--szNodeNum;
+
+		return Error(false);
+	}
+
+	//获取头部一项
+	Error GetHead(DataType &tDataGet)
+	{
+		if (pHead == nullptr)
+		{
+			return Error(true, 1, __FUNCTION__, "源链表头为空");
+		}
+
+		//拷贝到目标
+		tDataGet = *pHead;
+
+		return Error(false);
+	}
+
+	//获取尾部一项
+	Error GetTail(DataType &tDataGet)
+	{
+		if (pTail == nullptr)
+		{
+			return Error(true, 1, __FUNCTION__, "源链表尾为空");
+		}
+
+		//拷贝到目标
+		tDataGet = *pTail;
 
 		return Error(false);
 	}
