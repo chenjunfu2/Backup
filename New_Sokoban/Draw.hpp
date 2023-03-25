@@ -12,22 +12,22 @@
 
 #include "Map.hpp"
 
-#define MAP_SYMBOL_COUNT 7
-#define MAP_SYMBOL_LEN 2
+#define MAP_SYMBOL_COUNT 5
+#define MAP_SYMBOL_LEN 3
 
 class Map_Draw//地图绘制
 {
 public:
 	struct Symbol
 	{
-		char cStr[MAP_SYMBOL_COUNT];//每种字符占用2个字节，用于输出符号
+		char cStr[MAP_SYMBOL_LEN];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
 	Symbol stSymbol[MAP_SYMBOL_COUNT];//5种符号
-	OutputConsole csConsole;//控制台对象
+	OutputConsole &csConsole;//控制台对象
 public:
-	Map_Draw(const Symbol *_pstSymbol, const OutputConsole &_csConsole = OutputConsole()) :
+	Map_Draw(const Symbol *_pstSymbol, OutputConsole &_csConsole) :
 		stSymbol{0}, csConsole(_csConsole)
 	{
 		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
@@ -41,8 +41,10 @@ public:
 	}
 
 	//全部绘制
-	void DrawMap(const Map &csMap, const OutputConsole::CursorPos &stDrawPos)
+	void DrawMap(const Map &csMap, const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
+		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+
 		for (long y = 0; y < csMap.Hight(); ++y)
 		{
 			csConsole.SetCursorPos(stDrawPos.x, stDrawPos.y + y);
@@ -54,12 +56,15 @@ public:
 				csConsole.WriteBuffer(stSymbol[enBlock].cStr, MAP_SYMBOL_LEN);
 			}
 		}
+
+		csConsole.SetColor(OldColor);//恢复颜色
 	}
 
 	//交叉重绘，绘制(更新)玩家附近的内容
-	void CrossRedraw(const Map &csMap, long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos)
+	void CrossRedraw(const Map &csMap, long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
 		//绘制地图
+		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
 		//绘制一行
 		long lBegX = lCrossX - 2 < 0 ? 0 : lCrossX - 2;
@@ -84,6 +89,8 @@ public:
 			csConsole.SetColor(stSymbol[enBlock].ucColor);
 			csConsole.WriteBuffer(stSymbol[enBlock].cStr, MAP_SYMBOL_LEN);
 		}
+
+		csConsole.SetColor(OldColor);//恢复颜色
 	}
 };
 
@@ -96,21 +103,21 @@ public:
 #include "Player.hpp"
 
 #define PLAYER_SYMBOL_COUNT 2
-#define PLAYER_SYMBOL_LEN 2
+#define PLAYER_SYMBOL_LEN 3
 
 class Player_Draw//玩家绘制
 {
 public:
 	struct Symbol
 	{
-		char cStr[PLAYER_SYMBOL_COUNT];//每种字符占用2个字节，用于输出符号
+		char cStr[PLAYER_SYMBOL_LEN];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
 	Symbol stSymbol[PLAYER_SYMBOL_LEN];//2种符号
-	OutputConsole csConsole;//控制台对象
+	OutputConsole &csConsole;//控制台对象
 public:
-	Player_Draw(const Symbol *_pstSymbol, const OutputConsole &_csConsole = OutputConsole()) :
+	Player_Draw(const Symbol *_pstSymbol, OutputConsole &_csConsole) :
 		stSymbol{0}, csConsole(_csConsole)
 	{
 		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
@@ -124,13 +131,17 @@ public:
 	}
 
 	//绘制人物
-	void DrawPlayer(const Player &csPlayer, const OutputConsole::CursorPos &stDrawPos)
+	void DrawPlayer(const Player &csPlayer, const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
+		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+
 		csConsole.SetCursorPos(stDrawPos.x + csPlayer.x * 2, stDrawPos.y + csPlayer.y);
 
 		Player::Block enBlock = csPlayer.enPlayer;
 		csConsole.SetColor(stSymbol[enBlock].ucColor);
 		csConsole.WriteBuffer(stSymbol[enBlock].cStr, PLAYER_SYMBOL_LEN);
+
+		csConsole.SetColor(OldColor);//恢复颜色
 	}
 };
 

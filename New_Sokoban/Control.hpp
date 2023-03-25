@@ -7,19 +7,19 @@
 //控制逻辑
 class Game_Control
 {
-private:
+public:
 	struct Move_Data
 	{
 		long lXMove, lYMove;//XY移动方向
 		long lCode;//操作码
 	};
-
-	Map csMap;
-	Player csPlayer;
+private:
+	Map &csMap;
+	Player &csPlayer;
 	List<Move_Data> csOperate;//操作记录
 	List<Move_Data> csUndo;//撤销记录
 public:
-	Game_Control(const Map &_csMap, const Player &_csPlayer):
+	Game_Control(Map &_csMap, Player &_csPlayer) :
 		csMap(_csMap),csPlayer(_csPlayer)
 	{}
 	~Game_Control(void) = default;
@@ -211,12 +211,14 @@ public:
 				enPlayerMoveBlock = Map::Blank;
 				enPlayerCurrentBlock = Map::BoxInDestn;
 			}
+			break;
 		case 5:
 			{
 				//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的目的地
 				enPlayerMoveBlock = Map::Destn;
 				enPlayerCurrentBlock = Map::BoxInDestn;
 			}
+			break;
 		default:
 			{
 				return false;//出现错误提前返回，不执行后面内容
@@ -260,7 +262,7 @@ public:
 			return false;
 		}
 		//上面查看成功代表尾部一定有元素，此处无需再次判断
-		csOperate.MoveTailToTail(csOperate);//转移到用户操作链表中
+		csUndo.MoveTailToTail(csOperate);//转移到用户操作链表中
 
 		// 越界判断
 		if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||

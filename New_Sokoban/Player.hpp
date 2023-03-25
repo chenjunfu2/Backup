@@ -21,4 +21,7 @@ public:
 	long x;
 	long y;
 	Block enPlayer;//״̬
+
+	Player(long _x, long _y, Block _enPlayer = PlayerInBlank) :x(_x), y(_y), enPlayer(_enPlayer)
+	{}
 };

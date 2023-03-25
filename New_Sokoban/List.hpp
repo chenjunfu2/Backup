@@ -7,7 +7,7 @@
 template<typename DataType>
 class List
 {
-protected:
+private:
 	//节点声明
 	struct Node
 	{
@@ -15,7 +15,7 @@ protected:
 		Node *pNext;//下一个节点
 		DataType tData;//数据
 	};
-private:
+
 	Node *pHead;//头部
 	Node *pTail;//尾部
 	size_t szNodeNum;//元素个数计数
@@ -570,7 +570,7 @@ public:
 		}
 
 		//拷贝到目标
-		tDataGet = *pHead;
+		tDataGet = pHead->tData;
 
 		return Error(false);
 	}
@@ -584,7 +584,7 @@ public:
 		}
 
 		//拷贝到目标
-		tDataGet = *pTail;
+		tDataGet = pTail->tData;
 
 		return Error(false);
 	}
