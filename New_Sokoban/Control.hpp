@@ -154,6 +154,8 @@ public:
 		//移动玩家
 		csPlayer.x += lXMove;
 		csPlayer.y += lYMove;
+		//清空撤销链表（如果有元素的话）
+		csUndo.RemoveAll();
 		return true;
 	}
 
@@ -170,65 +172,72 @@ public:
 		csOperate.MoveTailToTail(csUndo);//转移到撤销链表中
 
 
-		// 越界判断
-		if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||
-			csPlayer.y + stMoveData.lYMove < 0 || csPlayer.y + stMoveData.lYMove >= csMap.Hight())
-		{
-			return false;
-		}
-		
-		//获得玩家移动方向上的地图实体
-		Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.lXMove, csPlayer.y + stMoveData.lYMove);
-		//获得玩家当前位置上的地图实体
-		Map::Block &enPlayerCurrentBlock = csMap(csPlayer.x, csPlayer.y);
-
 		switch (stMoveData.lCode)
 		{
 		case 0:
 		case 1:
 			break;//无地图交互，啥都不做
-		case 2:
-			{
-				//拉动它（箱子移动到玩家身上，玩家位置是空地）并恢复原先的空地
-				enPlayerMoveBlock = Map::Blank;
-				enPlayerCurrentBlock = Map::BoxInBlank;
-			}
-			break;
-		case 3:
-			{
-				//递减目的地箱子数
-				--csMap.DestnBoxNum();
-				//拉动它（箱子移动到玩家身上，玩家位置是空地）并恢复原先的目的地
-				enPlayerMoveBlock = Map::Destn;
-				enPlayerCurrentBlock = Map::BoxInBlank;
-			}
-			break;
-		case 4:
-			{
-				//递增目的地箱子数
-				++csMap.DestnBoxNum();
-				//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的空地
-				enPlayerMoveBlock = Map::Blank;
-				enPlayerCurrentBlock = Map::BoxInDestn;
-			}
-			break;
-		case 5:
-			{
-				//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的目的地
-				enPlayerMoveBlock = Map::Destn;
-				enPlayerCurrentBlock = Map::BoxInDestn;
-			}
-			break;
 		default:
 			{
-				return false;//出现错误提前返回，不执行后面内容
+				// 越界判断
+				if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||
+					csPlayer.y + stMoveData.lYMove < 0 || csPlayer.y + stMoveData.lYMove >= csMap.Hight())
+				{
+					return false;
+				}
+
+				//获得玩家移动方向上的地图实体
+				Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.lXMove, csPlayer.y + stMoveData.lYMove);
+				//获得玩家当前位置上的地图实体
+				Map::Block &enPlayerCurrentBlock = csMap(csPlayer.x, csPlayer.y);
+
+				switch (stMoveData.lCode)
+				{
+				case 2:
+					{
+						//拉动它（箱子移动到玩家身上，玩家位置是空地）并恢复原先的空地
+						enPlayerMoveBlock = Map::Blank;
+						enPlayerCurrentBlock = Map::BoxInBlank;
+					}
+					break;
+				case 3:
+					{
+						//递减目的地箱子数
+						--csMap.DestnBoxNum();
+						//拉动它（箱子移动到玩家身上，玩家位置是空地）并恢复原先的目的地
+						enPlayerMoveBlock = Map::Destn;
+						enPlayerCurrentBlock = Map::BoxInBlank;
+					}
+					break;
+				case 4:
+					{
+						//递增目的地箱子数
+						++csMap.DestnBoxNum();
+						//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的空地
+						enPlayerMoveBlock = Map::Blank;
+						enPlayerCurrentBlock = Map::BoxInDestn;
+					}
+					break;
+				case 5:
+					{
+						//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的目的地
+						enPlayerMoveBlock = Map::Destn;
+						enPlayerCurrentBlock = Map::BoxInDestn;
+					}
+					break;
+				default:
+					{
+						return false;//出现错误提前返回，不执行后面内容
+					}
+					break;
+				}
 			}
 			break;
 		}
 
 		// 越界判断
-		if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||
-			csPlayer.y + stMoveData.lYMove < 0 || csPlayer.y + stMoveData.lYMove >= csMap.Hight())
+		if (csPlayer.x - stMoveData.lXMove < 0 || csPlayer.x - stMoveData.lXMove >= csMap.Width() ||
+			csPlayer.y - stMoveData.lYMove < 0 || csPlayer.y - stMoveData.lYMove >= csMap.Hight())
 		{
 			return false;
 		}
