@@ -87,7 +87,7 @@ template<typename T, size_t N>
 bool WriteFileWithGeneralEndian(FILE *fpWrite, const T(&tArr)[N])
 {
 	//两种情况处理，每个元素大小等于一字节的数组直接写入文件，否则对每个字节的字节序进行变换
-	if (sizeof(T) == 1)
+	if constexpr (sizeof(T) == 1)
 	{
 		if (fwrite(tArr, sizeof(T), N, fpWrite) != N)
 		{
@@ -112,7 +112,7 @@ template<typename T, size_t N>
 bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
 {
 	//两种情况处理，每个元素大小等于一字节的数组直接读入数组，否则对每个字节的字节序进行变换
-	if (sizeof(T) == 1)
+	if constexpr (sizeof(T) == 1)
 	{
 		if (fread(tArr, sizeof(T), N, fpRead) != N)
 		{
