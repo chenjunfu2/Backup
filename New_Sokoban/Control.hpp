@@ -24,24 +24,29 @@ public:
 	{}
 	~Game_Control(void) = default;
 
-	size_t GetStep(void)
-	{
-		return csOperate.GetNodeNum();
-	}
-
-	Map &GetMap(void)
-	{
-		return csMap;
-	}
-
-	Player &GetPlayer(void)
-	{
-		return csPlayer;
-	}
-
 	bool IsWin(void)
 	{
 		return csMap.DestnBoxNum() == csMap.AllBoxNum();
+	}
+
+	bool MoveUp(void)//上
+	{
+		return MovePlayer(0, -1);
+	}
+
+	bool MoveDn(void)//下
+	{
+		return MovePlayer(0, 1);
+	}
+
+	bool MoveLf(void)//左
+	{
+		return MovePlayer(-1, 0);
+	}
+
+	bool MoveRi(void)//右
+	{
+		return MovePlayer(1, 0);
 	}
 
 	//移动
@@ -64,14 +69,14 @@ public:
 		else if (enPlayerMoveBlock == Map::Blank)//玩家前面是空地
 		{
 			//设置玩家状态
-			csPlayer.enPlayer = Player::PlayerInBlank;
+			csPlayer.enPlayerStatus = Player::PlayerInBlank;
 			//加入链表
 			csOperate.InsertTail({lXMove,lYMove,0});
 		}
 		else if (enPlayerMoveBlock == Map::Destn)//玩家前面是目的地
 		{
 			//设置玩家状态
-			csPlayer.enPlayer = Player::PlayerInDestn;
+			csPlayer.enPlayerStatus = Player::PlayerInDestn;
 			//加入链表
 			csOperate.InsertTail({lXMove,lYMove,1});
 		}
@@ -95,19 +100,19 @@ public:
 					enPlayerMoveBlock = Map::Blank;
 					enPlayerDoubleMoveBlock = Map::BoxInBlank;
 					//设置玩家状态
-					csPlayer.enPlayer = Player::PlayerInBlank;
+					csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					//加入链表
 					csOperate.InsertTail({lXMove,lYMove,2});
 				}
 				else if (enPlayerDoubleMoveBlock == Map::Destn)//箱子前面是目的地
 				{
 					//递增目的地箱子数
-					++csMap.DestnBoxNum();
+					csMap.IncDestnBoxNum();
 					//推动它
 					enPlayerMoveBlock = Map::Blank;
 					enPlayerDoubleMoveBlock = Map::BoxInDestn;
 					//设置玩家状态
-					csPlayer.enPlayer = Player::PlayerInBlank;
+					csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					//加入链表
 					csOperate.InsertTail({lXMove,lYMove,3});
 				}
@@ -121,12 +126,12 @@ public:
 				if (enPlayerDoubleMoveBlock == Map::Blank)//箱子前面是空地
 				{
 					//递减目的地箱子数
-					--csMap.DestnBoxNum();
+					csMap.DecDestnBoxNum();
 					//推动它
 					enPlayerMoveBlock = Map::Destn;
 					enPlayerDoubleMoveBlock = Map::BoxInBlank;
 					//设置玩家状态
-					csPlayer.enPlayer = Player::PlayerInDestn;
+					csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					//加入链表
 					csOperate.InsertTail({lXMove,lYMove,4});
 				}
@@ -136,7 +141,7 @@ public:
 					enPlayerMoveBlock = Map::Destn;
 					enPlayerDoubleMoveBlock = Map::BoxInDestn;
 					//设置玩家状态
-					csPlayer.enPlayer = Player::PlayerInDestn;
+					csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					//加入链表
 					csOperate.InsertTail({lXMove,lYMove,5});
 				}
@@ -203,7 +208,7 @@ public:
 				case 3:
 					{
 						//递减目的地箱子数
-						--csMap.DestnBoxNum();
+						csMap.DecDestnBoxNum();
 						//拉动它（箱子移动到玩家身上，玩家位置是空地）并恢复原先的目的地
 						enPlayerMoveBlock = Map::Destn;
 						enPlayerCurrentBlock = Map::BoxInBlank;
@@ -212,7 +217,7 @@ public:
 				case 4:
 					{
 						//递增目的地箱子数
-						++csMap.DestnBoxNum();
+						csMap.IncDestnBoxNum();
 						//拉动它（箱子移动到玩家身上，玩家位置是目的地）并恢复原先的空地
 						enPlayerMoveBlock = Map::Blank;
 						enPlayerCurrentBlock = Map::BoxInDestn;
@@ -247,12 +252,12 @@ public:
 		if (enPlayerReverseMoveBlock == Map::Blank)
 		{
 			//设置玩家状态
-			csPlayer.enPlayer = Player::PlayerInBlank;
+			csPlayer.enPlayerStatus = Player::PlayerInBlank;
 		}
 		else if (enPlayerReverseMoveBlock == Map::Destn)
 		{
 			//设置玩家状态
-			csPlayer.enPlayer = Player::PlayerInDestn;
+			csPlayer.enPlayerStatus = Player::PlayerInDestn;
 		}
 		//反向移动玩家
 		csPlayer.x -= stMoveData.lXMove;
@@ -288,13 +293,13 @@ public:
 		case 0:
 			{
 				//设置玩家状态
-				csPlayer.enPlayer = Player::PlayerInBlank;
+				csPlayer.enPlayerStatus = Player::PlayerInBlank;
 			}
 			break;
 		case 1:
 			{
 				//设置玩家状态
-				csPlayer.enPlayer = Player::PlayerInDestn;
+				csPlayer.enPlayerStatus = Player::PlayerInDestn;
 			}
 			break;
 		default:
@@ -317,29 +322,29 @@ public:
 						enPlayerMoveBlock = Map::Blank;
 						enPlayerDoubleMoveBlock = Map::BoxInBlank;
 						//设置玩家状态
-						csPlayer.enPlayer = Player::PlayerInBlank;
+						csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					}
 					break;
 				case 3:
 					{
 						//递增目的地箱子数
-						++csMap.DestnBoxNum();
+						csMap.IncDestnBoxNum();
 						//推动它
 						enPlayerMoveBlock = Map::Blank;
 						enPlayerDoubleMoveBlock = Map::BoxInDestn;
 						//设置玩家状态
-						csPlayer.enPlayer = Player::PlayerInBlank;
+						csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					}
 					break;
 				case 4:
 					{
 						//递减目的地箱子数
-						--csMap.DestnBoxNum();
+						csMap.DecDestnBoxNum();
 						//推动它
 						enPlayerMoveBlock = Map::Destn;
 						enPlayerDoubleMoveBlock = Map::BoxInBlank;
 						//设置玩家状态
-						csPlayer.enPlayer = Player::PlayerInDestn;
+						csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					}
 					break;
 				case 5:
@@ -348,7 +353,7 @@ public:
 						enPlayerMoveBlock = Map::Destn;
 						enPlayerDoubleMoveBlock = Map::BoxInDestn;
 						//设置玩家状态
-						csPlayer.enPlayer = Player::PlayerInDestn;
+						csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					}
 					break;
 				default:
@@ -366,7 +371,24 @@ public:
 		csPlayer.y += stMoveData.lYMove;
 		return true;
 	}
+
+	size_t GetStep(void)
+	{
+		return csOperate.GetNodeNum();
+	}
+
+	size_t GetUndo(void)
+	{
+		return csUndo.GetNodeNum();
+	}
+
+	const List<Move_Data> &GetOpList(void)
+	{
+		return csOperate;
+	}
+
+	const List<Move_Data> &GetUdList(void)
+	{
+		return csUndo;
+	}
 };
-
-
-#include "Draw.hpp"

@@ -249,6 +249,12 @@ public:
 		return Error(false);
 	}
 
+	//是否为空
+	bool IsEmpty(void)
+	{
+		return pHead == pTail == nullptr;
+	}
+
 	//获取Node个数
 	size_t GetNodeNum(void) const
 	{

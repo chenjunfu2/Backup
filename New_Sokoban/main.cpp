@@ -6,7 +6,6 @@
 
 struct ps
 {
-	Map *mp;
 	Player *pr;
 	Map_Draw *mpd;
 	Player_Draw *prd;
@@ -18,8 +17,8 @@ void move_draw(ps *stps, long lXMove, long lYMove)
 {
 	if (stps->gec->MovePlayer(lXMove, lYMove))
 	{
-		stps->mpd->CrossRedraw(*(stps->mp), stps->pr->x, stps->pr->y);
-		stps->prd->DrawPlayer(*(stps->pr));
+		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
+		stps->prd->Draw();
 	}
 }
 
@@ -56,8 +55,8 @@ long fcr(void *p)
 	ps *stps = (ps *)p;
 	if (stps->gec->UndoMove())
 	{
-		stps->mpd->CrossRedraw(*(stps->mp), stps->pr->x, stps->pr->y);
-		stps->prd->DrawPlayer(*(stps->pr));
+		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
+		stps->prd->Draw();
 	}
 	return 0;
 }
@@ -67,14 +66,37 @@ long fcf(void *p)
 	ps *stps = (ps *)p;
 	if (stps->gec->RedoMove())
 	{
-		stps->mpd->CrossRedraw(*(stps->mp), stps->pr->x, stps->pr->y);
-		stps->prd->DrawPlayer(*(stps->pr));
+		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
+		stps->prd->Draw();
 	}
 	return 0;
 }
 
 int main(void)
 {
+	unsigned char mb[15][16] =
+	{
+		{0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0},//1
+		{0,0,0,1,2,1,0,0,0,0,0,0,0,0,1,0},
+		{0,0,0,1,0,1,0,2,0,0,0,0,0,3,0,0},
+		{0,0,0,1,3,1,1,1,1,1,0,0,0,0,0,0},
+		{1,1,1,1,0,0,3,0,2,0,0,0,1,0,0,0},
+		{1,2,0,3,0,0,0,1,1,1,0,0,0,0,0,0},
+		{1,1,1,0,1,3,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,2,1,0,0,0,0,0,0,0,0,3},
+		{0,0,0,3,0,0,1,0,0,0,0,3,0,0,0,0},
+		{0,0,0,1,0,0,0,0,0,3,2,2,0,0,0,2},
+		{0,0,0,0,0,0,0,0,0,3,2,2,0,3,0,0},
+		{0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,1},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+		{2,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1},
+	};
+	
+
+	Map map((Map::Block *)mb, 16, 15);
+	Player player(5, 5);
+	Game_Control gamectl(map, player);
 	OutputConsole optc;
 	optc.SetCursorShow(false);
 
@@ -86,50 +108,25 @@ int main(void)
 		{"□",OutputConsole::bright_yellow,},
 		{"●",OutputConsole::bright_green,},
 	};
-	Map_Draw mpdraw(sym, optc);
+	Map_Draw mpdraw(map, sym, optc);
 
 	Player_Draw::Symbol pym[2] =
 	{
 		{"♀",OutputConsole::bright_white,},
-		{"♀",OutputConsole::bright_white | OutputConsole::bg_bright_red,},
+		{"♀",OutputConsole::bright_red,},
 	};
-	Player_Draw prdraw(pym, optc);
+	Player_Draw prdraw(player, pym, optc);
 
-	int mb[15][16] =
-	{
-		{0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0},//1
-		{0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0},
-		{0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0},
-		{0,0,0,1,3,1,1,1,1,1,0,0,0,0,0,0},
-		{1,1,1,1,0,0,3,0,2,1,0,0,0,0,0,0},
-		{1,2,0,3,0,0,0,1,1,1,0,0,0,0,0,0},
-		{1,1,1,1,1,3,0,0,0,0,0,0,0,0,0,0},
-		{0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0},
-		{0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,3},
-		{0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0},
-		{0,0,0,0,0,0,0,0,0,3,2,2,0,0,0,2},
-		{0,0,0,0,0,0,0,0,0,3,2,2,0,3,0,0},
-		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-		{0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1},
-	};
-
-	
-
-	Map map((Map::Block *)mb, 16, 15);
-	Player player(5, 5);
-	Game_Control gamectl(map, player);
 	ps rgp =
 	{
-		&map,
 		&player,
 		&mpdraw,
 		&prdraw,
 		&gamectl,
 	};
 
-	mpdraw.DrawMap(map);
-	prdraw.DrawPlayer(player);
+	mpdraw.Draw();
+	prdraw.Draw();
 
 	Interaction ir;
 
@@ -153,7 +150,8 @@ int main(void)
 
 	if (ir.Loop() == 1)
 	{
-		printf("\n\n\nyou win!");
+		optc.SetCursorPos(0, 16);
+		printf("you win!");
 		return 1;
 	}
 	

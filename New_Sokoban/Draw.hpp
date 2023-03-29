@@ -24,11 +24,12 @@ public:
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
+	Map &csMap;
 	Symbol stSymbol[MAP_SYMBOL_COUNT];//5种符号
 	OutputConsole &csConsole;//控制台对象
 public:
-	Map_Draw(const Symbol *_pstSymbol, OutputConsole &_csConsole) :
-		stSymbol{0}, csConsole(_csConsole)
+	Map_Draw(Map &_csMap, const Symbol *_pstSymbol, OutputConsole &_csConsole) :
+		csMap(_csMap), stSymbol{0}, csConsole(_csConsole)
 	{
 		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
 	}
@@ -41,7 +42,7 @@ public:
 	}
 
 	//全部绘制
-	void DrawMap(const Map &csMap, const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
@@ -61,7 +62,7 @@ public:
 	}
 
 	//交叉重绘，绘制(更新)玩家附近的内容
-	void CrossRedraw(const Map &csMap, long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void CrossDraw(long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
 		//绘制地图
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
@@ -114,11 +115,12 @@ public:
 		OutputConsole::Color ucColor;//输出的颜色
 	};
 private:
+	Player &csPlayer;
 	Symbol stSymbol[PLAYER_SYMBOL_COUNT];//2种符号
 	OutputConsole &csConsole;//控制台对象
 public:
-	Player_Draw(const Symbol *_pstSymbol, OutputConsole &_csConsole) :
-		stSymbol{0}, csConsole(_csConsole)
+	Player_Draw(Player &_csPlayer, const Symbol *_pstSymbol, OutputConsole &_csConsole) :
+		csPlayer(_csPlayer), stSymbol{0}, csConsole(_csConsole)
 	{
 		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
 	}
@@ -130,14 +132,19 @@ public:
 		return stSymbol[lPos];
 	}
 
+	const Symbol &operator[](long lPos) const//返回成员引用
+	{
+		return stSymbol[lPos];
+	}
+
 	//绘制人物
-	void DrawPlayer(const Player &csPlayer, const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
 		csConsole.SetCursorPos(stDrawPos.x + csPlayer.x * 2, stDrawPos.y + csPlayer.y);
 
-		Player::Block enBlock = csPlayer.enPlayer;
+		Player::Block enBlock = csPlayer.enPlayerStatus;
 		csConsole.SetColor(stSymbol[enBlock].ucColor);
 		csConsole.WriteBuffer(stSymbol[enBlock].cStr, PLAYER_SYMBOL_LEN);
 
