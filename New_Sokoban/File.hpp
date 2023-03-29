@@ -109,12 +109,12 @@ bool WriteFileWithGeneralEndian(FILE *fpWrite, const T(&tArr)[N])
 }
 
 template<typename T, size_t N>
-bool ReadFileWithGeneralEndian(FILE *fpWrite, T(&tArr)[N])
+bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
 {
 	//两种情况处理，每个元素大小等于一字节的数组直接读入数组，否则对每个字节的字节序进行变换
 	if (sizeof(T) == 1)
 	{
-		if (fread(tArr, sizeof(T), N, fpWrite) != N)
+		if (fread(tArr, sizeof(T), N, fpRead) != N)
 		{
 			return false;
 		}
@@ -123,7 +123,7 @@ bool ReadFileWithGeneralEndian(FILE *fpWrite, T(&tArr)[N])
 	{
 		for (size_t i = 0; i < N; ++i)
 		{
-			if (!ReadFileWithGeneralEndian<T>(fpWrite, tArr[i]))
+			if (!ReadFileWithGeneralEndian<T>(fpRead, tArr[i]))
 			{
 				return false;
 			}
@@ -241,7 +241,7 @@ public:
 		}
 		
 
-
+		return true;
 	}
 
 	bool ReadFile(FILE *fpRead, Player &csPlayer)
