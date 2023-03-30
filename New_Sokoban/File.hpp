@@ -83,20 +83,20 @@ bool WriteFileWithGeneralEndian(FILE *fpWrite, const T &tData)
 	return true;
 }
 
-template<typename T, size_t N>
-bool WriteFileWithGeneralEndian(FILE *fpWrite, const T(&tArr)[N])
+template<typename T>
+bool WriteFileWithGeneralEndian(FILE *fpWrite, const T* tArr, size_t szArrLen)
 {
 	//两种情况处理，每个元素大小等于一字节的数组直接写入文件，否则对每个字节的字节序进行变换
 	if constexpr (sizeof(T) == 1)
 	{
-		if (fwrite(tArr, sizeof(T), N, fpWrite) != N)
+		if (fwrite(tArr, sizeof(T), szArrLen, fpWrite) != szArrLen)
 		{
 			return false;
 		}
 	}
 	else
 	{
-		for (size_t i = 0; i < N; ++i)
+		for (size_t i = 0; i < szArrLen; ++i)
 		{
 			if (!WriteFileWithGeneralEndian<T>(fpWrite, tArr[i]))
 			{
@@ -108,20 +108,20 @@ bool WriteFileWithGeneralEndian(FILE *fpWrite, const T(&tArr)[N])
 	return true;
 }
 
-template<typename T, size_t N>
-bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
+template<typename T>
+bool ReadFileWithGeneralEndian(FILE *fpRead, T* tArr, size_t szArrLen)
 {
 	//两种情况处理，每个元素大小等于一字节的数组直接读入数组，否则对每个字节的字节序进行变换
 	if constexpr (sizeof(T) == 1)
 	{
-		if (fread(tArr, sizeof(T), N, fpRead) != N)
+		if (fread(tArr, sizeof(T), szArrLen, fpRead) != szArrLen)
 		{
 			return false;
 		}
 	}
 	else
 	{
-		for (size_t i = 0; i < N; ++i)
+		for (size_t i = 0; i < szArrLen; ++i)
 		{
 			if (!ReadFileWithGeneralEndian<T>(fpRead, tArr[i]))
 			{
@@ -131,6 +131,20 @@ bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
 	}
 
 	return true;
+}
+
+//转发调用，数组自动求大小套模板
+template<typename T, size_t N>
+bool WriteFileWithGeneralEndian(FILE *fpWrite, const T(&tArr)[N])
+{
+	WriteFileWithGeneralEndian(fpWrite, tArr, N);
+}
+
+//转发调用，数组自动求大小套模板
+template<typename T, size_t N>
+bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
+{
+	ReadFileWithGeneralEndian(fpRead, tArr, N);
 }
 
 
@@ -233,6 +247,7 @@ public:
 
 		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
 		{
+			//写入符号类的所有成员
 			if (!WriteFileWithGeneralEndian(fpWrite, csPlayerDraw[i].cStr) ||
 				!WriteFileWithGeneralEndian(fpWrite, csPlayerDraw[i].ucColor))
 			{
@@ -240,15 +255,32 @@ public:
 			}
 		}
 		
-
 		return true;
 	}
 
-	bool ReadFile(FILE *fpRead, Player &csPlayer)
+	bool ReadFile(FILE *fpRead, Player &csPlayer, Player_Draw &csPlayerDraw)
 	{
+		bool bSuccess = true;
+		uint64_t u64Read;
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.x = u64Read, true);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.y = u64Read, true);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.enPlayerStatus = (decltype(csPlayer.enPlayerStatus))u64Read, true);
+		if (!bSuccess)
+		{
+			return false;
+		}
 
+		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
+		{
+			//读取符号类的所有成员
+			if (!ReadFileWithGeneralEndian(fpRead, csPlayerDraw[i].cStr) ||
+				!ReadFileWithGeneralEndian(fpRead, csPlayerDraw[i].ucColor))
+			{
+				return false;
+			}
+		}
 
-
+		return true;
 	}
 
 };
@@ -271,8 +303,32 @@ private:
 		Map::Block enMapData;//变长地图数据集
 	};
 	
-	bool WriteFile(FILE *fpWrite, const Map &csMap)
+	bool WriteFile(FILE *fpWrite, const Map &csMap, const Map_Draw &csMapDraw)
 	{
+		bool bSuccess = true;
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.Width());
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.Hight());
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.AllBoxNum());
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.DestnBoxNum());
+		if (!bSuccess)
+		{
+			return false;
+		}
+
+		for (long i = 0; i < MAP_SYMBOL_COUNT; ++i)
+		{
+			//写入符号类的所有成员
+			if (!WriteFileWithGeneralEndian(fpWrite, csMapDraw[i].cStr) ||
+				!WriteFileWithGeneralEndian(fpWrite, csMapDraw[i].ucColor))
+			{
+				return false;
+			}
+		}
+		
+
+		//写入地图数据集
+		WriteFileWithGeneralEndian(fpWrite, csMap.GetMap(), csMap.Width() * csMap.Hight());
+
 
 
 

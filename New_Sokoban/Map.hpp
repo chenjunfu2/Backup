@@ -137,6 +137,16 @@ public:
 		return pMap[y * lMapWidth + x];
 	}
 
+	Block *GetMapPoint(void)
+	{
+		return pMap;
+	}
+
+	const Block *GetMap(void) const
+	{
+		return pMap;
+	}
+
 	long Width(void) const
 	{
 		return lMapWidth;

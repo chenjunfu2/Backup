@@ -41,6 +41,11 @@ public:
 		return stSymbol[lPos];
 	}
 
+	const Symbol &operator[](long lPos) const//返回成员引用
+	{
+		return stSymbol[lPos];
+	}
+
 	//全部绘制
 	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
