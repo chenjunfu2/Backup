@@ -148,6 +148,8 @@ bool ReadFileWithGeneralEndian(FILE *fpRead, T(&tArr)[N])
 }
 
 
+#include <new>
+
 //文件头验证类
 class File_Head_Verify
 {
@@ -218,165 +220,214 @@ public:
 	}
 };
 
-#include "Draw.hpp"
-
 //玩家数据读写类
 #include "Player.hpp"
 class Player_File
 {
-private:
-	struct File_Structure
-	{
-		uint64_t x;//玩家坐标x
-		uint64_t y;//玩家坐标y
-		uint64_t u64PlayerStatus;//玩家状态
-
-		Player_Draw::Symbol stPlayerSymbol[PLAYER_SYMBOL_COUNT];//玩家符号
-	};
 public:
-	bool WriteFile(FILE *fpWrite, const Player &csPlayer, const Player_Draw &csPlayerDraw)
+	static bool WriteFile(FILE *fpWrite, const Player::File &stPlayerFile)
 	{
 		bool bSuccess = true;
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csPlayer.x);
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csPlayer.y);
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csPlayer.enPlayerStatus);
-		if (!bSuccess)
-		{
-			return false;
-		}
-
-		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
-		{
-			//写入符号类的所有成员
-			if (!WriteFileWithGeneralEndian(fpWrite, csPlayerDraw[i].cStr) ||
-				!WriteFileWithGeneralEndian(fpWrite, csPlayerDraw[i].ucColor))
-			{
-				return false;
-			}
-		}
-		
-		return true;
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.u64X);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.u64Y);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.enPlayerStatus);
+		return bSuccess;
 	}
 
-	bool ReadFile(FILE *fpRead, Player &csPlayer, Player_Draw &csPlayerDraw)
+	static bool ReadFile(FILE *fpRead, Player::File &stPlayerFile)
 	{
 		bool bSuccess = true;
-		uint64_t u64Read;
-		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.x = u64Read, true);
-		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.y = u64Read, true);
-		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, u64Read) && (csPlayer.enPlayerStatus = (decltype(csPlayer.enPlayerStatus))u64Read, true);
-		if (!bSuccess)
-		{
-			return false;
-		}
-
-		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
-		{
-			//读取符号类的所有成员
-			if (!ReadFileWithGeneralEndian(fpRead, csPlayerDraw[i].cStr) ||
-				!ReadFileWithGeneralEndian(fpRead, csPlayerDraw[i].ucColor))
-			{
-				return false;
-			}
-		}
-
-		return true;
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.u64X);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.u64Y);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.enPlayerStatus);
+		return bSuccess;
 	}
 
 };
 
+//玩家符号数据读写类
+#include "Draw.hpp"
+class Player_Draw_File
+{
+	static bool WriteFile(FILE *fpWrite, const Player_Draw::File &stPlayerDrawFile)
+	{
+		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
+		{
+			//写入符号类的所有成员
+			if (!WriteFileWithGeneralEndian(fpWrite, stPlayerDrawFile.stSymbol[i].cStr) ||
+				!WriteFileWithGeneralEndian(fpWrite, stPlayerDrawFile.stSymbol[i].ucColor))
+			{
+				return false;
+			}
+		}
 
+		return true;
+	}
+
+	static bool ReadFile(FILE *fpRead, Player_Draw::File &stPlayerDrawFile)
+	{
+		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
+		{
+			//读取符号类的所有成员
+			if (!ReadFileWithGeneralEndian(fpRead, stPlayerDrawFile.stSymbol[i].cStr) ||
+				!ReadFileWithGeneralEndian(fpRead, stPlayerDrawFile.stSymbol[i].ucColor))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+};
 
 //地图数据读写类
 #include "Map.hpp"
 class Map_File
 {
-private:
-	struct File_Structure
-	{
-		uint64_t u64MapWidth;//地图宽
-		uint64_t u64MapHight;//地图高
-		uint64_t u64AllBoxNum;//箱子总数
-		uint64_t u64DestnBoxNum;//在终点的箱子数
-
-		Map_Draw::Symbol stMapSymbol;//地图符号
-		Map::Block enMapData;//变长地图数据集
-	};
-	
-	bool WriteFile(FILE *fpWrite, const Map &csMap, const Map_Draw &csMapDraw)
+public:
+	static bool WriteFile(FILE *fpWrite, const Map::File &stMapFile)
 	{
 		bool bSuccess = true;
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.Width());
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.Hight());
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.AllBoxNum());
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (uint64_t)csMap.DestnBoxNum());
-		if (!bSuccess)
-		{
-			return false;
-		}
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64MapWidth);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64MapHight);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64AllBoxNum);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64DestnBoxNum);
+		bSuccess = bSuccess && stMapFile.enpMapData != nullptr;//判断是否为空
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//写入地图数据集
+		return bSuccess;
+	}
 
+	static bool ReadFile(FILE *fpRead, Map::File &stMapFile)
+	{
+		bool bSuccess = true;
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64MapWidth);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64MapHight);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64AllBoxNum);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64DestnBoxNum);
+		bSuccess = bSuccess && (stMapFile.enpMapData = new(std::nothrow) Map::Block[stMapFile.u64MapWidth * stMapFile.u64MapHight]) != nullptr;//分配内存
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//读取地图数据集
+		return bSuccess;
+	}
+};
+
+//地图符号数据读写类
+#include "Draw.hpp"
+class Map_Draw_File
+{
+public:
+	static bool WriteFile(FILE *fpWrite, const Map_Draw::File &stMapDrawFile)
+	{
 		for (long i = 0; i < MAP_SYMBOL_COUNT; ++i)
 		{
 			//写入符号类的所有成员
-			if (!WriteFileWithGeneralEndian(fpWrite, csMapDraw[i].cStr) ||
-				!WriteFileWithGeneralEndian(fpWrite, csMapDraw[i].ucColor))
+			if (!WriteFileWithGeneralEndian(fpWrite, stMapDrawFile.stSymbol[i].cStr) ||
+				!WriteFileWithGeneralEndian(fpWrite, stMapDrawFile.stSymbol[i].ucColor))
 			{
 				return false;
 			}
 		}
-		
 
-		//写入地图数据集
-		WriteFileWithGeneralEndian(fpWrite, csMap.GetMap(), csMap.Width() * csMap.Hight());
-
-
-
-
+		return true;
 	}
 
-	bool ReadFile(FILE *fpRead, Map &csMap)
+	static bool ReadFile(FILE *fpRead, Map_Draw::File &stMapDrawFile)
 	{
+		for (long i = 0; i < MAP_SYMBOL_COUNT; ++i)
+		{
+			//读取符号类的所有成员
+			if (!ReadFileWithGeneralEndian(fpRead, stMapDrawFile.stSymbol[i].cStr) ||
+				!ReadFileWithGeneralEndian(fpRead, stMapDrawFile.stSymbol[i].ucColor))
+			{
+				return false;
+			}
+		}
 
-
-
+		return true;
 	}
-
-
-
 };
 
 
-
-
-//链表数据读写类
-#include "List.hpp"
+//游戏控制数据读写类
 #include "Control.hpp"
-class List_File
+class Game_Control_File
 {
-private:
-	struct File_Structure
+public:
+	static bool WriteFile(FILE *fpWrite, const Game_Control::File &stControlFile)
 	{
-		uint64_t u64ListNum;//链表数据个数
-		Game_Control::Move_Data stListData;//变长链表数据集
-	};
+		if (!WriteFileWithGeneralEndian(fpWrite, (uint64_t)stControlFile.csOperate.GetNodeNum()))
+		{
+			return false;
+		}
 
-	bool WriteFile(FILE *fpWrite, const List<Game_Control::Move_Data> &csList)
-	{
+		for (auto i : stControlFile.csOperate)
+		{
+			if (!WriteFileWithGeneralEndian(fpWrite, i.cXMove) ||
+				!WriteFileWithGeneralEndian(fpWrite, i.cYMove) ||
+				!WriteFileWithGeneralEndian(fpWrite, i.ucCode))
+			{
+				return false;
+			}
+		}
 
+		if (!WriteFileWithGeneralEndian(fpWrite, (uint64_t)stControlFile.csUndo.GetNodeNum()))
+		{
+			return false;
+		}
 
+		for (auto i : stControlFile.csUndo)
+		{
+			if (!WriteFileWithGeneralEndian(fpWrite, i.cXMove) ||
+				!WriteFileWithGeneralEndian(fpWrite, i.cYMove) ||
+				!WriteFileWithGeneralEndian(fpWrite, i.ucCode))
+			{
+				return false;
+			}
+		}
 
+		return true;
 	}
 
-	bool ReadFile(FILE *fpRead, List<Game_Control::Move_Data> &csList)
+	static bool ReadFile(FILE *fpRead, Game_Control::File &stControlFile)
 	{
+		uint64_t u64OperateNodeNum;
+		if (!ReadFileWithGeneralEndian(fpRead, u64OperateNodeNum))
+		{
+			return false;
+		}
+
+		for (uint64_t i = 0; i < u64OperateNodeNum; ++i)
+		{
+			Game_Control::Move_Data stMoveData;
+			if (!ReadFileWithGeneralEndian(fpRead, stMoveData.cXMove) ||
+				!ReadFileWithGeneralEndian(fpRead, stMoveData.cYMove) ||
+				!ReadFileWithGeneralEndian(fpRead, stMoveData.ucCode) ||
+				!stControlFile.csOperate.InsertTail(stMoveData))
+			{
+				return false;
+			}
+		}
 
 
+		uint64_t u64UndoNodeNum;
+		if (!ReadFileWithGeneralEndian(fpRead, u64UndoNodeNum))
+		{
+			return false;
+		}
 
+		for (uint64_t i = 0; i < u64UndoNodeNum; ++i)
+		{
+			Game_Control::Move_Data stMoveData;
+			if (!ReadFileWithGeneralEndian(fpRead, stMoveData.cXMove) ||
+				!ReadFileWithGeneralEndian(fpRead, stMoveData.cYMove) ||
+				!ReadFileWithGeneralEndian(fpRead, stMoveData.ucCode) ||
+				!stControlFile.csUndo.InsertTail(stMoveData))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
-
-
-
-
 };
 
 #include "Level.hpp"
@@ -384,14 +435,9 @@ private:
 class Level_File
 {
 private:
-	struct BinFile
-	{
-		char cFileHead[sizeof("Sokoban_Level")];
-
-		//玩家、地图、最高纪录(时间、步数)
-		
-
-	};
+	static constexpr char cpFileHead[] = "Sokoban_Level";
+public:
+	//玩家、地图、最高纪录(时间、步数) Highest_Record
 
 
 
@@ -405,18 +451,8 @@ private:
 class Playback_File
 {
 private:
-	struct BinFile
-	{
-		char cFileHead[sizeof("Sokoban_PlayBack")];
-
-		
-
-		
-
-		
-		
-		
-	};
+	static constexpr char cpFileHead[] = "Sokoban_PlayBack";
+public:
 
 
 
@@ -430,14 +466,8 @@ private:
 class Progress_File
 {
 private:
-	struct BinFile
-	{
-		char cFileHead[sizeof("Sokoban_Progress")];
-
-
-
-
-	};
+	static constexpr char cpFileHead[] = "Sokoban_Progress";
+public:
 
 
 
@@ -453,13 +483,12 @@ private:
 class Config_File
 {
 private:
-	struct BinFile
-	{
-		char cFileHead[sizeof("Sokoban_Config")];
-		uint64_t u64HeadSize;
+	static constexpr char cpFileHead[] = "Sokoban_Config";
+public:
 
 
 
 
-	};
+
+
 };

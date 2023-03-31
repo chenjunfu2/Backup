@@ -23,10 +23,26 @@ public:
 		char cStr[MAP_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
+
+	struct File
+	{
+		Symbol (&stSymbol)[MAP_SYMBOL_COUNT];//5种符号
+	};
 private:
 	Map &csMap;
 	Symbol stSymbol[MAP_SYMBOL_COUNT];//5种符号
 	OutputConsole &csConsole;//控制台对象
+public:
+	Map_Draw(Map &_csMap, const File &_File, OutputConsole &_csConsole) :
+		csMap(_csMap), stSymbol{0}, csConsole(_csConsole)
+	{
+		memcpy(stSymbol, _File.stSymbol, sizeof(stSymbol));
+	}
+
+	const File GetFile(void)
+	{
+		return File(stSymbol);
+	}
 public:
 	Map_Draw(Map &_csMap, const Symbol *_pstSymbol, OutputConsole &_csConsole) :
 		csMap(_csMap), stSymbol{0}, csConsole(_csConsole)
@@ -36,14 +52,14 @@ public:
 
 	~Map_Draw(void) = default;
 
-	Symbol &operator[](long lPos)//返回成员引用
+	void SetSymbol(const Symbol *_pstSymbol)
 	{
-		return stSymbol[lPos];
+		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
 	}
 
-	const Symbol &operator[](long lPos) const//返回成员引用
+	const Symbol *GetSymbol(void) const
 	{
-		return stSymbol[lPos];
+		return stSymbol;
 	}
 
 	//全部绘制
@@ -119,10 +135,26 @@ public:
 		char cStr[PLAYER_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
 		OutputConsole::Color ucColor;//输出的颜色
 	};
+
+	struct File
+	{
+		Symbol (&stSymbol)[PLAYER_SYMBOL_COUNT];//2种符号
+	};
 private:
 	Player &csPlayer;
 	Symbol stSymbol[PLAYER_SYMBOL_COUNT];//2种符号
 	OutputConsole &csConsole;//控制台对象
+public:
+	Player_Draw(Player &_csPlayer, const File &_File, OutputConsole &_csConsole) :
+		csPlayer(_csPlayer), stSymbol{0}, csConsole(_csConsole)
+	{
+		memcpy(stSymbol, _File.stSymbol, sizeof(stSymbol));
+	}
+
+	const File GetFile(void)
+	{
+		return File(stSymbol);
+	}
 public:
 	Player_Draw(Player &_csPlayer, const Symbol *_pstSymbol, OutputConsole &_csConsole) :
 		csPlayer(_csPlayer), stSymbol{0}, csConsole(_csConsole)
@@ -132,14 +164,14 @@ public:
 
 	~Player_Draw(void) = default;
 
-	Symbol &operator[](long lPos)//返回成员引用
+	void SetSymbol(const Symbol *_pstSymbol)
 	{
-		return stSymbol[lPos];
+		memcpy(stSymbol, _pstSymbol, sizeof(stSymbol));
 	}
 
-	const Symbol &operator[](long lPos) const//返回成员引用
+	const Symbol *GetSymbol(void) const
 	{
-		return stSymbol[lPos];
+		return stSymbol;
 	}
 
 	//绘制人物

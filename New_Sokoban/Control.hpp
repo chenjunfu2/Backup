@@ -10,14 +10,29 @@ class Game_Control
 public:
 	struct Move_Data
 	{
-		long lXMove, lYMove;//XY移动方向
-		long lCode;//操作码
+		signed char cXMove, cYMove;//XY移动方向
+		unsigned char ucCode;//操作码
+	};
+
+	struct File
+	{
+		List<Move_Data> &csOperate;//操作记录
+		List<Move_Data> &csUndo;//撤销记录
 	};
 private:
 	Map &csMap;
 	Player &csPlayer;
 	List<Move_Data> csOperate;//操作记录
 	List<Move_Data> csUndo;//撤销记录
+public:
+	Game_Control(Map &_csMap, Player &_csPlayer, const File &_File) :
+		csMap(_csMap), csPlayer(_csPlayer), csOperate(std::move(_File.csOperate)), csUndo(std::move(_File.csUndo))
+	{}
+
+	const File GetFile(void)
+	{
+		return File(csOperate, csUndo);
+	}
 public:
 	Game_Control(Map &_csMap, Player &_csPlayer) :
 		csMap(_csMap),csPlayer(_csPlayer)
@@ -50,17 +65,17 @@ public:
 	}
 
 	//移动
-	bool MovePlayer(long lXMove, long lYMove)
+	bool MovePlayer(signed char cXMove, signed char cYMove)
 	{
 		// 越界判断
-		if (csPlayer.x + lXMove < 0 || csPlayer.x + lXMove >= csMap.Width() ||
-			csPlayer.y + lYMove < 0 || csPlayer.y + lYMove >= csMap.Hight())
+		if (csPlayer.x + cXMove < 0 || csPlayer.x + cXMove >= csMap.Width() ||
+			csPlayer.y + cYMove < 0 || csPlayer.y + cYMove >= csMap.Hight())
 		{
 			return false;
 		}
 
 		//获得当前玩家移动方向上的地图实体
-		Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + lXMove, csPlayer.y + lYMove);
+		Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + cXMove, csPlayer.y + cYMove);
 
 		if (enPlayerMoveBlock == Map::Wall)//玩家前面是墙壁
 		{
@@ -71,26 +86,26 @@ public:
 			//设置玩家状态
 			csPlayer.enPlayerStatus = Player::PlayerInBlank;
 			//加入链表
-			csOperate.InsertTail({lXMove,lYMove,0});
+			csOperate.InsertTail({cXMove,cYMove,0});
 		}
 		else if (enPlayerMoveBlock == Map::Destn)//玩家前面是目的地
 		{
 			//设置玩家状态
 			csPlayer.enPlayerStatus = Player::PlayerInDestn;
 			//加入链表
-			csOperate.InsertTail({lXMove,lYMove,1});
+			csOperate.InsertTail({cXMove,cYMove,1});
 		}
 		else//其它情况
 		{
 			//越界判断
-			if (csPlayer.x + lXMove * 2 < 0 || csPlayer.x + lXMove * 2 >= csMap.Width() ||
-				csPlayer.y + lYMove * 2 < 0 || csPlayer.y + lYMove * 2 >= csMap.Hight())
+			if (csPlayer.x + cXMove * 2 < 0 || csPlayer.x + cXMove * 2 >= csMap.Width() ||
+				csPlayer.y + cYMove * 2 < 0 || csPlayer.y + cYMove * 2 >= csMap.Hight())
 			{
 				return false;
 			}
 
 			//获得玩家二倍移动方向上的地图实体
-			Map::Block &enPlayerDoubleMoveBlock = csMap(csPlayer.x + lXMove * 2, csPlayer.y + lYMove * 2);
+			Map::Block &enPlayerDoubleMoveBlock = csMap(csPlayer.x + cXMove * 2, csPlayer.y + cYMove * 2);
 
 			if (enPlayerMoveBlock == Map::BoxInBlank)//玩家前面是在空地上的箱子
 			{
@@ -102,7 +117,7 @@ public:
 					//设置玩家状态
 					csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					//加入链表
-					csOperate.InsertTail({lXMove,lYMove,2});
+					csOperate.InsertTail({cXMove,cYMove,2});
 				}
 				else if (enPlayerDoubleMoveBlock == Map::Destn)//箱子前面是目的地
 				{
@@ -114,7 +129,7 @@ public:
 					//设置玩家状态
 					csPlayer.enPlayerStatus = Player::PlayerInBlank;
 					//加入链表
-					csOperate.InsertTail({lXMove,lYMove,3});
+					csOperate.InsertTail({cXMove,cYMove,3});
 				}
 				else//未检测的项：箱子前面是：箱子、在目的地上的箱子、墙壁，直接返回
 				{
@@ -133,7 +148,7 @@ public:
 					//设置玩家状态
 					csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					//加入链表
-					csOperate.InsertTail({lXMove,lYMove,4});
+					csOperate.InsertTail({cXMove,cYMove,4});
 				}
 				else if (enPlayerDoubleMoveBlock == Map::Destn)//箱子前面是目的地
 				{
@@ -143,7 +158,7 @@ public:
 					//设置玩家状态
 					csPlayer.enPlayerStatus = Player::PlayerInDestn;
 					//加入链表
-					csOperate.InsertTail({lXMove,lYMove,5});
+					csOperate.InsertTail({cXMove,cYMove,5});
 				}
 				else//未检测的项：箱子前面是：箱子、在目的地上的箱子、墙壁，直接返回
 				{
@@ -157,8 +172,8 @@ public:
 		}
 
 		//移动玩家
-		csPlayer.x += lXMove;
-		csPlayer.y += lYMove;
+		csPlayer.x += cXMove;
+		csPlayer.y += cYMove;
 		//清空撤销链表（如果有元素的话）
 		csUndo.RemoveAll();
 		return true;
@@ -177,7 +192,7 @@ public:
 		csOperate.MoveTailToTail(csUndo);//转移到撤销链表中
 
 
-		switch (stMoveData.lCode)
+		switch (stMoveData.ucCode)
 		{
 		case 0:
 		case 1:
@@ -185,18 +200,18 @@ public:
 		default:
 			{
 				// 越界判断
-				if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||
-					csPlayer.y + stMoveData.lYMove < 0 || csPlayer.y + stMoveData.lYMove >= csMap.Hight())
+				if (csPlayer.x + stMoveData.cXMove < 0 || csPlayer.x + stMoveData.cXMove >= csMap.Width() ||
+					csPlayer.y + stMoveData.cYMove < 0 || csPlayer.y + stMoveData.cYMove >= csMap.Hight())
 				{
 					return false;
 				}
 
 				//获得玩家移动方向上的地图实体
-				Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.lXMove, csPlayer.y + stMoveData.lYMove);
+				Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.cXMove, csPlayer.y + stMoveData.cYMove);
 				//获得玩家当前位置上的地图实体
 				Map::Block &enPlayerCurrentBlock = csMap(csPlayer.x, csPlayer.y);
 
-				switch (stMoveData.lCode)
+				switch (stMoveData.ucCode)
 				{
 				case 2:
 					{
@@ -241,14 +256,14 @@ public:
 		}
 
 		// 越界判断
-		if (csPlayer.x - stMoveData.lXMove < 0 || csPlayer.x - stMoveData.lXMove >= csMap.Width() ||
-			csPlayer.y - stMoveData.lYMove < 0 || csPlayer.y - stMoveData.lYMove >= csMap.Hight())
+		if (csPlayer.x - stMoveData.cXMove < 0 || csPlayer.x - stMoveData.cXMove >= csMap.Width() ||
+			csPlayer.y - stMoveData.cYMove < 0 || csPlayer.y - stMoveData.cYMove >= csMap.Hight())
 		{
 			return false;
 		}
 
 		//获得玩家反向移动方向上的地图实体
-		Map::Block &enPlayerReverseMoveBlock = csMap(csPlayer.x - stMoveData.lXMove, csPlayer.y - stMoveData.lYMove);
+		Map::Block &enPlayerReverseMoveBlock = csMap(csPlayer.x - stMoveData.cXMove, csPlayer.y - stMoveData.cYMove);
 		if (enPlayerReverseMoveBlock == Map::Blank)
 		{
 			//设置玩家状态
@@ -260,8 +275,8 @@ public:
 			csPlayer.enPlayerStatus = Player::PlayerInDestn;
 		}
 		//反向移动玩家
-		csPlayer.x -= stMoveData.lXMove;
-		csPlayer.y -= stMoveData.lYMove;
+		csPlayer.x -= stMoveData.cXMove;
+		csPlayer.y -= stMoveData.cYMove;
 
 		return true;
 	}
@@ -279,16 +294,16 @@ public:
 		csUndo.MoveTailToTail(csOperate);//转移到用户操作链表中
 
 		// 越界判断
-		if (csPlayer.x + stMoveData.lXMove < 0 || csPlayer.x + stMoveData.lXMove >= csMap.Width() ||
-			csPlayer.y + stMoveData.lYMove < 0 || csPlayer.y + stMoveData.lYMove >= csMap.Hight())
+		if (csPlayer.x + stMoveData.cXMove < 0 || csPlayer.x + stMoveData.cXMove >= csMap.Width() ||
+			csPlayer.y + stMoveData.cYMove < 0 || csPlayer.y + stMoveData.cYMove >= csMap.Hight())
 		{
 			return false;
 		}
 
 		//获得当前玩家移动方向上的地图实体
-		Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.lXMove, csPlayer.y + stMoveData.lYMove);
+		Map::Block &enPlayerMoveBlock = csMap(csPlayer.x + stMoveData.cXMove, csPlayer.y + stMoveData.cYMove);
 
-		switch (stMoveData.lCode)
+		switch (stMoveData.ucCode)
 		{
 		case 0:
 			{
@@ -305,16 +320,16 @@ public:
 		default:
 			{
 				//越界判断
-				if (csPlayer.x + stMoveData.lXMove * 2 < 0 || csPlayer.x + stMoveData.lXMove * 2 >= csMap.Width() ||
-					csPlayer.y + stMoveData.lYMove * 2 < 0 || csPlayer.y + stMoveData.lYMove * 2 >= csMap.Hight())
+				if (csPlayer.x + stMoveData.cXMove * 2 < 0 || csPlayer.x + stMoveData.cXMove * 2 >= csMap.Width() ||
+					csPlayer.y + stMoveData.cYMove * 2 < 0 || csPlayer.y + stMoveData.cYMove * 2 >= csMap.Hight())
 				{
 					return false;
 				}
 
 				//获得玩家二倍移动方向上的地图实体
-				Map::Block &enPlayerDoubleMoveBlock = csMap(csPlayer.x + stMoveData.lXMove * 2, csPlayer.y + stMoveData.lYMove * 2);
+				Map::Block &enPlayerDoubleMoveBlock = csMap(csPlayer.x + stMoveData.cXMove * 2, csPlayer.y + stMoveData.cYMove * 2);
 
-				switch (stMoveData.lCode)
+				switch (stMoveData.ucCode)
 				{
 				case 2:
 					{
@@ -367,8 +382,8 @@ public:
 		}
 
 		//移动玩家
-		csPlayer.x += stMoveData.lXMove;
-		csPlayer.y += stMoveData.lYMove;
+		csPlayer.x += stMoveData.cXMove;
+		csPlayer.y += stMoveData.cYMove;
 		return true;
 	}
 
@@ -380,15 +395,5 @@ public:
 	size_t GetUndo(void)
 	{
 		return csUndo.GetNodeNum();
-	}
-
-	const List<Move_Data> &GetOpList(void)
-	{
-		return csOperate;
-	}
-
-	const List<Move_Data> &GetUdList(void)
-	{
-		return csUndo;
 	}
 };

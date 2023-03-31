@@ -23,37 +23,52 @@ public:
 		BoxInBlank = 3,	//3：箱子"□"
 		BoxInDestn = 4,	//4：箱子在目的地"★" "●"
 	};
+
+	struct File
+	{
+		uint64_t u64MapWidth;//地图宽
+		uint64_t u64MapHight;//地图高
+		uint64_t u64AllBoxNum;//箱子总数
+		uint64_t u64DestnBoxNum;//在终点的箱子数
+		Block *enpMapData;//变长地图数据集
+	};
 private:
-	Block *pMap;//地图数组
+	Block *enpMap;//地图数组
 	long lMapWidth;//地图宽高
 	long lMapHight;
 
 	long lAllBoxNum;//箱子总数
 	long lDestnBoxNum;//在终点的箱子数
 public:
-	Map(Block *_pMap, long _lMapWidth, long _lMapHight, bool bMovePointer = false) :
-		pMap(_pMap), lMapWidth(_lMapWidth), lMapHight(_lMapHight), lAllBoxNum(0), lDestnBoxNum(0)
+	Map(const File &_File) :
+		enpMap(_File.enpMapData), lMapWidth(_File.u64MapWidth), lMapHight(_File.u64MapHight), 
+		lAllBoxNum(_File.u64AllBoxNum), lDestnBoxNum(_File.u64DestnBoxNum)
+	{}
+
+	const File GetFile(void) const
 	{
-		//如果地图指针不是移动进来的，则进行内存分配和拷贝
-		if (!bMovePointer)
+		return File(lMapWidth, lMapHight, lAllBoxNum, lDestnBoxNum, enpMap);
+	}
+public:
+	Map(Block *_pMap, long _lMapWidth, long _lMapHight) :
+		enpMap(nullptr), lMapWidth(_lMapWidth), lMapHight(_lMapHight), lAllBoxNum(0), lDestnBoxNum(0)
+	{
+		enpMap = new(std::nothrow) Block[lMapWidth * lMapHight];
+		if (enpMap == nullptr)
 		{
-			pMap = new(std::nothrow) Block[lMapWidth * lMapHight];
-			if (pMap == nullptr)
-			{
-				return;
-			}
-			//拷贝地图
-			memcpy(pMap, _pMap, sizeof(Block) * lMapWidth * lMapHight);
+			return;
 		}
+		//拷贝地图
+		memcpy(enpMap, _pMap, sizeof(Block) * lMapWidth * lMapHight);
 
 		//计算箱子数目
 		for (long long i = 0; i < lMapWidth * lMapHight; ++i)
 		{
-			if (pMap[i] == BoxInBlank)
+			if (enpMap[i] == BoxInBlank)
 			{
 				++lAllBoxNum;//递增总数
 			}
-			else if (pMap[i] == BoxInDestn)
+			else if (enpMap[i] == BoxInDestn)
 			{
 				++lAllBoxNum;
 				++lDestnBoxNum;//递增在终点的箱子数
@@ -62,23 +77,23 @@ public:
 	}
 
 	Map(const Map &_Map) :
-		pMap(nullptr), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
+		enpMap(nullptr), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
 		lAllBoxNum(_Map.lAllBoxNum), lDestnBoxNum(_Map.lDestnBoxNum)
 	{
-		pMap = new(std::nothrow) Block[lMapWidth * lMapHight];
-		if (pMap == nullptr)
+		enpMap = new(std::nothrow) Block[lMapWidth * lMapHight];
+		if (enpMap == nullptr)
 		{
 			return;
 		}
 		//拷贝地图
-		memcpy(pMap, _Map.pMap, sizeof(Block) * lMapWidth * lMapHight);
+		memcpy(enpMap, _Map.enpMap, sizeof(Block) * lMapWidth * lMapHight);
 	}
 
 	Map(Map &&_Map) :
-		pMap(_Map.pMap), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
+		enpMap(_Map.enpMap), lMapWidth(_Map.lMapWidth), lMapHight(_Map.lMapHight),
 		lAllBoxNum(_Map.lAllBoxNum), lDestnBoxNum(_Map.lDestnBoxNum)
 	{
-		_Map.pMap = nullptr;
+		_Map.enpMap = nullptr;
 		_Map.lMapWidth = 0;
 		_Map.lMapHight = 0;
 		_Map.lAllBoxNum = 0;
@@ -87,19 +102,19 @@ public:
 
 	~Map(void)
 	{
-		delete[] pMap;
-		pMap = nullptr;
+		delete[] enpMap;
+		enpMap = nullptr;
 	}
 
 	Map &operator=(Map &&_Map)
 	{
-		pMap = _Map.pMap;
+		enpMap = _Map.enpMap;
 		lMapWidth = _Map.lMapWidth;
 		lMapHight = _Map.lMapHight;
 		lAllBoxNum = _Map.lAllBoxNum;
 		lDestnBoxNum = _Map.lDestnBoxNum;
 
-		_Map.pMap = nullptr;
+		_Map.enpMap = nullptr;
 		_Map.lMapWidth = 0;
 		_Map.lMapHight = 0;
 		_Map.lAllBoxNum = 0;
@@ -115,36 +130,26 @@ public:
 		lAllBoxNum = _Map.lAllBoxNum;
 		lDestnBoxNum = _Map.lDestnBoxNum;
 
-		delete[] pMap;
-		pMap = new(std::nothrow) Block[lMapWidth * lMapHight];
-		if (pMap == nullptr)
+		delete[] enpMap;
+		enpMap = new(std::nothrow) Block[lMapWidth * lMapHight];
+		if (enpMap == nullptr)
 		{
 			return *this;
 		}
 		//拷贝地图
-		memcpy(pMap, _Map.pMap, sizeof(Block) * lMapWidth * lMapHight);
+		memcpy(enpMap, _Map.enpMap, sizeof(Block) * lMapWidth * lMapHight);
 
 		return *this;
 	}
 
 	Block &operator()(long x, long y)//访问多维数组
 	{
-		return pMap[y * lMapWidth + x];
+		return enpMap[y * lMapWidth + x];
 	}
 
 	const Block &operator()(long x, long y) const//访问多维数组
 	{
-		return pMap[y * lMapWidth + x];
-	}
-
-	Block *GetMapPoint(void)
-	{
-		return pMap;
-	}
-
-	const Block *GetMap(void) const
-	{
-		return pMap;
+		return enpMap[y * lMapWidth + x];
 	}
 
 	long Width(void) const
