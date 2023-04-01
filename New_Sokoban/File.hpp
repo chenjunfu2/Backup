@@ -230,8 +230,10 @@ public:
 		bool bSuccess = true;
 		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.u64X);
 		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.u64Y);
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stPlayerFile.enPlayerStatus);
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (unsigned char &)stPlayerFile.enPlayerStatus);
 		return bSuccess;
+
+		static_assert(sizeof(unsigned char &) == sizeof(stPlayerFile.enPlayerStatus));//确保类型大小一致，不会出现UB
 	}
 
 	static bool ReadFile(FILE *fpRead, Player::File &stPlayerFile)
@@ -239,8 +241,10 @@ public:
 		bool bSuccess = true;
 		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.u64X);
 		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.u64Y);
-		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stPlayerFile.enPlayerStatus);
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, (unsigned char &)stPlayerFile.enPlayerStatus);
 		return bSuccess;
+
+		static_assert(sizeof(unsigned char &) == sizeof(stPlayerFile.enPlayerStatus));//确保类型大小一致，不会出现UB
 	}
 
 };
@@ -293,8 +297,10 @@ public:
 		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64AllBoxNum);
 		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.u64DestnBoxNum);
 		bSuccess = bSuccess && stMapFile.enpMapData != nullptr;//判断是否为空
-		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//写入地图数据集
+		bSuccess = bSuccess && WriteFileWithGeneralEndian(fpWrite, (unsigned char*)stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//写入地图数据集
 		return bSuccess;
+
+		static_assert(sizeof(unsigned char) == sizeof(*stMapFile.enpMapData));//确保类型大小一致，不会出现UB
 	}
 
 	static bool ReadFile(FILE *fpRead, Map::File &stMapFile)
@@ -305,8 +311,10 @@ public:
 		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64AllBoxNum);
 		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.u64DestnBoxNum);
 		bSuccess = bSuccess && (stMapFile.enpMapData = new(std::nothrow) Map::Block[stMapFile.u64MapWidth * stMapFile.u64MapHight]) != nullptr;//分配内存
-		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//读取地图数据集
+		bSuccess = bSuccess && ReadFileWithGeneralEndian(fpRead, (unsigned char *)stMapFile.enpMapData, stMapFile.u64MapWidth * stMapFile.u64MapHight);//读取地图数据集
 		return bSuccess;
+
+		static_assert(sizeof(unsigned char) == sizeof(*stMapFile.enpMapData));//确保类型大小一致，不会出现UB
 	}
 };
 
@@ -359,7 +367,7 @@ public:
 			return false;
 		}
 
-		for (auto i : stControlFile.csOperate)
+		for (auto const &i : stControlFile.csOperate)
 		{
 			if (!WriteFileWithGeneralEndian(fpWrite, i.cXMove) ||
 				!WriteFileWithGeneralEndian(fpWrite, i.cYMove) ||
@@ -374,7 +382,7 @@ public:
 			return false;
 		}
 
-		for (auto i : stControlFile.csUndo)
+		for (auto const &i : stControlFile.csUndo)
 		{
 			if (!WriteFileWithGeneralEndian(fpWrite, i.cXMove) ||
 				!WriteFileWithGeneralEndian(fpWrite, i.cYMove) ||
@@ -430,6 +438,16 @@ public:
 	}
 };
 
+//最高纪录数据读写类(前10)
+#include "Record.hpp"
+class Record_File
+{
+
+
+
+};
+
+
 #include "Level.hpp"
 //关卡文件
 class Level_File
@@ -437,7 +455,8 @@ class Level_File
 private:
 	static constexpr char cpFileHead[] = "Sokoban_Level";
 public:
-	//玩家、地图、最高纪录(时间、步数) Highest_Record
+	//玩家、地图、最高纪录(步数越少越高) Highest_Record
+
 
 
 
