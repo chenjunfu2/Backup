@@ -2,6 +2,7 @@
 #include "Map.hpp"
 #include "Player.hpp"
 #include "List.hpp"
+#include "Record.hpp"
 
 
 //控制逻辑
@@ -22,11 +23,12 @@ public:
 private:
 	Map &csMap;
 	Player &csPlayer;
+	Record &csRecord;
 	List<Move_Data> csOperate;//操作记录
 	List<Move_Data> csUndo;//撤销记录
 public:
-	Game_Control(Map &_csMap, Player &_csPlayer, const File &_File) :
-		csMap(_csMap), csPlayer(_csPlayer), csOperate(std::move(_File.csOperate)), csUndo(std::move(_File.csUndo))
+	Game_Control(Map &_csMap, Player &_csPlayer, Record &_csRecord, const File &_File) :
+		csMap(_csMap), csPlayer(_csPlayer), csRecord(_csRecord), csOperate(std::move(_File.csOperate)), csUndo(std::move(_File.csUndo))
 	{}
 
 	const File GetFile(void)
@@ -34,8 +36,8 @@ public:
 		return File(csOperate, csUndo);
 	}
 public:
-	Game_Control(Map &_csMap, Player &_csPlayer) :
-		csMap(_csMap),csPlayer(_csPlayer)
+	Game_Control(Map &_csMap, Player &_csPlayer, Record &_csRecord) :
+		csMap(_csMap), csPlayer(_csPlayer), csRecord(_csRecord)
 	{}
 	~Game_Control(void) = default;
 
@@ -174,8 +176,10 @@ public:
 		//移动玩家
 		csPlayer.x += cXMove;
 		csPlayer.y += cYMove;
-		//清空撤销链表（如果有元素的话）
-		csUndo.RemoveAll();
+		++csRecord;//递增移动步数
+
+		csUndo.RemoveAll();//清空撤销链表（如果有元素的话）
+
 		return true;
 	}
 
@@ -274,9 +278,11 @@ public:
 			//设置玩家状态
 			csPlayer.enPlayerStatus = Player::PlayerInDestn;
 		}
+
 		//反向移动玩家
 		csPlayer.x -= stMoveData.cXMove;
 		csPlayer.y -= stMoveData.cYMove;
+		--csRecord;//递减移动步数
 
 		return true;
 	}
@@ -384,16 +390,13 @@ public:
 		//移动玩家
 		csPlayer.x += stMoveData.cXMove;
 		csPlayer.y += stMoveData.cYMove;
+		++csRecord;//递增移动步数
+
 		return true;
 	}
 
-	size_t GetStep(void)
+	size_t GetStep(void)//获取步数(分数)
 	{
-		return csOperate.GetNodeNum();
-	}
-
-	size_t GetUndo(void)
-	{
-		return csUndo.GetNodeNum();
+		return csRecord;
 	}
 };

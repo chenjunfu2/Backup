@@ -2,73 +2,83 @@
 #include "Interaction.hpp"
 #include "Control.hpp"
 #include "Draw.hpp"
+#include "Record.hpp"
 
 #include "File.hpp"
 
+OutputConsole optc;
+
 struct ps
 {
-	Player *pr;
-	Map_Draw *mpd;
-	Player_Draw *prd;
-	Game_Control *gec;
+	Player &pr;
+	Record &rc;
+	Map_Draw &mpd;
+	Player_Draw &prd;
+	Game_Control &gec;
 };
 
 
-void move_draw(ps *stps, long lXMove, long lYMove)
+void move_draw(ps &stps, long lXMove, long lYMove)
 {
-	if (stps->gec->MovePlayer(lXMove, lYMove))
+	if (stps.gec.MovePlayer(lXMove, lYMove))
 	{
-		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
-		stps->prd->Draw();
+		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
+		stps.prd.Draw();
+		optc.SetCursorPos(0, 17);
+		printf("当前步数:%ld      ", (size_t)stps.rc);
 	}
 }
 
 long fcw(void * p)
 {
-	ps *stps = (ps *)p;
+	ps &stps = *(ps *)p;
 	move_draw(stps, 0, -1);
-	return stps->gec->IsWin();
+	return stps.gec.IsWin();
 }
 
 long fca(void *p)
 {
-	ps *stps = (ps *)p;
+	ps &stps = *(ps *)p;
 	move_draw(stps, -1, 0);
-	return stps->gec->IsWin();
+	return stps.gec.IsWin();
 }
 
 long fcs(void *p)
 {
-	ps *stps = (ps *)p;
+	ps &stps = *(ps *)p;
 	move_draw(stps, 0, 1);
-	return stps->gec->IsWin();
+	return stps.gec.IsWin();
 }
 
 long fcd(void *p)
 {
-	ps *stps = (ps *)p;
+	ps &stps = *(ps *)p;
 	move_draw(stps, 1, 0);
-	return stps->gec->IsWin();
+	return stps.gec.IsWin();
 }
 
 long fcr(void *p)
 {
-	ps *stps = (ps *)p;
-	if (stps->gec->UndoMove())
+	ps &stps = *(ps *)p;
+	if (stps.gec.UndoMove())
 	{
-		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
-		stps->prd->Draw();
+		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
+		stps.prd.Draw();
+		optc.SetCursorPos(0, 17);
+		printf("当前步数:%ld      ", (size_t)stps.rc);
 	}
 	return 0;
 }
 
 long fcf(void *p)
 {
-	ps *stps = (ps *)p;
-	if (stps->gec->RedoMove())
+	ps &stps = *(ps *)p;
+	if (stps.gec.RedoMove())
 	{
-		stps->mpd->CrossDraw(stps->pr->x, stps->pr->y);
-		stps->prd->Draw();
+		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
+		stps.prd.Draw();
+		optc.SetCursorPos(0, 17);
+		printf("当前步数:%ld      ", (size_t)stps.rc);
 	}
 	return 0;
 }
@@ -97,8 +107,8 @@ int main(void)
 
 	Map map((Map::Block *)mb, 16, 15);
 	Player player(5, 5);
-	Game_Control gamectl(map, player);
-	OutputConsole optc;
+	Record record(0, nullptr);
+	Game_Control gamectl(map, player, record);
 	optc.SetCursorShow(false);
 
 	Map_Draw::Symbol sym[5] =
@@ -120,14 +130,17 @@ int main(void)
 
 	ps rgp =
 	{
-		&player,
-		&mpdraw,
-		&prdraw,
-		&gamectl,
+		player,
+		record,
+		mpdraw,
+		prdraw,
+		gamectl,
 	};
 
 	mpdraw.Draw();
 	prdraw.Draw();
+	optc.SetCursorPos(0, 17);
+	printf("当前步数:%ld      ", (size_t)record);
 
 	Interaction ir;
 
@@ -151,7 +164,7 @@ int main(void)
 
 	if (ir.Loop() == 1)
 	{
-		optc.SetCursorPos(0, 16);
+		optc.SetCursorPos(0, 17);
 		printf("you win!");
 		return 1;
 	}

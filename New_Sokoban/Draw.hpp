@@ -189,6 +189,17 @@ public:
 	}
 };
 
+#include "Record.hpp"
+class Record_Draw
+{
+	//显示分数的颜色、历史最高纪录的个数等
+
+
+
+
+
+};
+
 #include "Menu.hpp"
 
 class Menu_Draw//菜单绘制
