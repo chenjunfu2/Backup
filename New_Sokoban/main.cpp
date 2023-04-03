@@ -24,8 +24,8 @@ void move_draw(ps &stps, long lXMove, long lYMove)
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
 		stps.prd.Draw();
-		optc.SetCursorPos(0, 17);
-		printf("当前步数:%ld      ", (size_t)stps.rc);
+		optc.SetCursorPos(0, 16);
+		printf("当前步数:%lld ", stps.rc.Current());
 	}
 }
 
@@ -64,8 +64,8 @@ long fcr(void *p)
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
 		stps.prd.Draw();
-		optc.SetCursorPos(0, 17);
-		printf("当前步数:%ld      ", (size_t)stps.rc);
+		optc.SetCursorPos(0, 16);
+		printf("当前步数:%lld ", stps.rc.Current());
 	}
 	return 0;
 }
@@ -77,14 +77,15 @@ long fcf(void *p)
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
 		stps.prd.Draw();
-		optc.SetCursorPos(0, 17);
-		printf("当前步数:%ld      ", (size_t)stps.rc);
+		optc.SetCursorPos(0, 16);
+		printf("当前步数:%lld ", stps.rc.Current());
 	}
 	return 0;
 }
 
 int main(void)
 {
+
 	unsigned char mb[15][16] =
 	{
 		{0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0},//1
@@ -139,8 +140,8 @@ int main(void)
 
 	mpdraw.Draw();
 	prdraw.Draw();
-	optc.SetCursorPos(0, 17);
-	printf("当前步数:%ld      ", (size_t)record);
+	optc.SetCursorPos(0, 16);
+	printf("当前步数:%lld ", record.Current());
 
 	Interaction ir;
 

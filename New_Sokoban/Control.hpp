@@ -397,6 +397,6 @@ public:
 
 	size_t GetStep(void)//获取步数(分数)
 	{
-		return csRecord;
+		return csRecord.Current();
 	}
 };
