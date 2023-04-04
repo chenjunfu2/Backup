@@ -354,6 +354,29 @@ public:
 	}
 };
 
+//最高纪录数据读写类
+#include "Record.hpp"
+class Record_File
+{
+public:
+	static bool WriteFile(FILE *fpWrite, const Record::File &stControlFile)
+	{}
+
+	static bool ReadFile(FILE *fpRead, Record::File &stControlFile)
+	{}
+};
+
+//最高纪录符号数据读写类
+class Record_Draw_File
+{
+public:
+	static bool WriteFile(FILE *fpWrite, const Record_Draw::File &stControlFile)
+	{}
+
+	static bool ReadFile(FILE *fpRead, Record_Draw::File &stControlFile)
+	{}
+};
+
 
 //游戏控制数据读写类
 #include "Control.hpp"
@@ -436,15 +459,6 @@ public:
 
 		return true;
 	}
-};
-
-//最高纪录数据读写类(前10)
-#include "Record.hpp"
-class Record_File
-{
-
-
-
 };
 
 

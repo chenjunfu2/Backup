@@ -89,7 +89,7 @@ public:
 		}
 		else
 		{
-			std::fill(std::begin(szHistroy), std::end(szHistroy), (size_t)-1);//无效分数，初始化为-1
+			std::fill(std::begin(szHistroy), std::end(szHistroy), szUnValid);//无效分数，初始化为szUnValid
 		}
 
 		//计算排名
@@ -118,10 +118,7 @@ public:
 		return *this;
 	}
 
-	bool IsValidHistroy(size_t szPos) const
-	{
-		return szHistroy[szPos] != (size_t)-1;//判断分数是否有效
-	}
+	static constexpr size_t szUnValid = (size_t)-1;//用于判断分数是否有效
 
 	size_t Histroy(size_t szPos) const
 	{

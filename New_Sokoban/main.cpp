@@ -11,7 +11,7 @@ OutputConsole optc;
 struct ps
 {
 	Player &pr;
-	Record &rc;
+	Record_Draw &rcd;
 	Map_Draw &mpd;
 	Player_Draw &prd;
 	Game_Control &gec;
@@ -23,9 +23,8 @@ void move_draw(ps &stps, long lXMove, long lYMove)
 	if (stps.gec.MovePlayer(lXMove, lYMove))
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
-		stps.prd.Draw();
-		optc.SetCursorPos(0, 16);
-		printf("当前步数:%lld ", stps.rc.Current());
+		stps.prd.Draw({0,0});
+		stps.rcd.Draw({0,16});
 	}
 }
 
@@ -63,9 +62,8 @@ long fcr(void *p)
 	if (stps.gec.UndoMove())
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
-		stps.prd.Draw();
-		optc.SetCursorPos(0, 16);
-		printf("当前步数:%lld ", stps.rc.Current());
+		stps.prd.Draw({0,0});
+		stps.rcd.Draw({0,16});
 	}
 	return 0;
 }
@@ -76,9 +74,8 @@ long fcf(void *p)
 	if (stps.gec.RedoMove())
 	{
 		stps.mpd.CrossDraw(stps.pr.x, stps.pr.y);
-		stps.prd.Draw();
-		optc.SetCursorPos(0, 16);
-		printf("当前步数:%lld ", stps.rc.Current());
+		stps.prd.Draw({0,0});
+		stps.rcd.Draw({0,16});
 	}
 	return 0;
 }
@@ -129,19 +126,20 @@ int main(void)
 	};
 	Player_Draw prdraw(player, pym, optc);
 
+	Record_Draw rcdraw(record, "步数%r", OutputConsole::bright_white, OutputConsole::bright_yellow, optc);
+
 	ps rgp =
 	{
 		player,
-		record,
+		rcdraw,
 		mpdraw,
 		prdraw,
 		gamectl,
 	};
 
-	mpdraw.Draw();
-	prdraw.Draw();
-	optc.SetCursorPos(0, 16);
-	printf("当前步数:%lld ", record.Current());
+	mpdraw.Draw({0,0});
+	prdraw.Draw({0,0});
+	rcdraw.Draw({0,16});
 
 	Interaction ir;
 
