@@ -45,7 +45,7 @@ private:
 	}
 public:
 	Record(const File &_File) :
-		szCurrent(_File.u64Current), szRanking(0), szHistroy{0}
+		szCurrent(_File.u64Current), szRanking(1), szHistroy{0}
 	{
 		for (size_t i = 0; i < HISTROY_COUNT; ++i)
 		{
@@ -67,7 +67,7 @@ public:
 		return RetFile;
 	}
 public:
-	Record(size_t _szCurrent, const size_t *_szpHistroy) :szCurrent(_szCurrent), szRanking(0), szHistroy{0}
+	Record(size_t _szCurrent, const size_t *_szpHistroy) :szCurrent(_szCurrent), szRanking(1), szHistroy{0}
 	{
 		if (_szpHistroy != nullptr)
 		{
@@ -103,12 +103,14 @@ public:
 		return *this;
 	}
 
+	//历史记录
 	size_t Histroy(size_t szPos) const
 	{
 		return szHistroy[szPos];
 	}
 
-	size_t CurrentInHistroy(size_t szPos) const
+	//排行榜
+	size_t RankingList(size_t szPos) const
 	{
 		if (szPos < szRanking - 1)
 		{
@@ -124,6 +126,7 @@ public:
 		}
 	}
 
+	//当前排名 1 ~ HISTROY_COUNT
 	size_t Ranking(void) const
 	{
 		return szRanking;

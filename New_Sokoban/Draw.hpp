@@ -63,7 +63,7 @@ public:
 	}
 
 	//全部绘制
-	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void DrawMap(const OutputConsole::CursorPos &stDrawPos = {0,0}) const
 	{
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
@@ -83,7 +83,7 @@ public:
 	}
 
 	//交叉重绘，绘制(更新)玩家附近的内容
-	void CrossDraw(long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void CrossDrawMap(long lCrossX, long lCrossY, const OutputConsole::CursorPos &stDrawPos = {0,0}) const
 	{
 		//绘制地图
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
@@ -175,7 +175,7 @@ public:
 	}
 
 	//绘制人物
-	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void DrawPlayer(const OutputConsole::CursorPos &stDrawPos = {0,0}) const
 	{
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
@@ -195,6 +195,8 @@ public:
 class Record_Draw
 {
 public:
+	static constexpr size_t RECORD_SYMBOL_COUNT = 3;
+
 	struct Symbol
 	{
 		std::string strOutput;//输出的文本（使用%r来指定分数文本填入的位置，使用%%来转译获得%）
@@ -202,76 +204,73 @@ public:
 		OutputConsole::Color ucNumbColor;//输出的数值颜色
 	};
 
+	enum Symbol_Type
+	{
+		SymbolCurrent,//分数符号对象
+		SymbolRanking,//排名符号对象
+		SymbolRankingList,//排行榜符号对象
+	};
+
 	struct File
 	{
-		Symbol &stSymbol;//符号对象
+		Symbol (&stSymbol)[RECORD_SYMBOL_COUNT];
 	};
 private:
 	Record &csRecord;//分数对象
-	Symbol stSymbol;//符号对象
-	std::string strFirst;//经过转义处理的文本前半段
-	std::string strSecond;//经过转义处理的文本后半段
+
+	Symbol stSymbol[RECORD_SYMBOL_COUNT];//符号对象
+	size_t szCutPos[RECORD_SYMBOL_COUNT];//截断位置
+
 	OutputConsole &csConsole;//控制台对象
 
-	static void EscapeStr(const std::string &strSource, std::string &strFirst, std::string &strSecond)
+
+	static void EscapeStr(std::string &strSource, size_t &szCutPos)
 	{
-		size_t szPos;
+		size_t szCurrentPos;
+		//查找字符串内的%r并把%%替换成%然后在%r的位置使用\0截断字符串但是不删除后面的内容并把截断位置保存
 
-		//找出分界符%r
-		szPos = strSource.find('%');
-		while (szPos != std::string::npos)
+		//是否遇到分界符%r
+		bool bFindDelimiter = false;
+		szCurrentPos = strSource.find('%');
+		while (szCurrentPos != std::string::npos)
 		{
-			++szPos;//查看下一个字符
-			if (strSource[szPos] == 'r')//遇到%r
+			++szCurrentPos;//查看下一个字符
+			if (!bFindDelimiter && strSource[szCurrentPos] == 'r')//第一次遇到%r
 			{
-				--szPos;//定位回%
-				break;
+				//定位回%截断字符串
+				strSource[szCurrentPos - 1] = '\0';//%替换为\0
+				strSource.erase(szCurrentPos, 1);//删掉r
+				szCutPos = szCurrentPos;//经过转义处理的文本前半段结束和经过转义处理的文本后半段开始
+				//找到了，剩下的不处理了直接忽略
+				bFindDelimiter = true;
 			}
-			else if (strSource[szPos] == '%')//双重%%
+			else if (strSource[szCurrentPos] == '%')//双重%%
 			{
-				++szPos;//跳过
+				strSource.erase(szCurrentPos, 1);//删掉%
 			}
 
-			szPos = strSource.find('%', szPos);//从当前位置继续找
+			szCurrentPos = strSource.find('%', szCurrentPos);//从当前位置继续找
 		}
 
-		//分字符串
-		strFirst = strSource.substr(0, szPos);
-		strSecond = strSource.substr(szPos + 2);
-
-		//对strFirst所有的%进行转义
-		szPos = strFirst.find('%');
-		while (szPos != std::string::npos)
+		if (bFindDelimiter)
 		{
-			++szPos;//查看下一个字符
-			if (strFirst[szPos] == '%')//双重%%
-			{
-				strFirst.erase(szPos);//删掉
-			}
-
-			szPos = strFirst.find('%', szPos);//从当前位置继续找
+			strSource.push_back(' ');//末尾插入空格
+			
 		}
-
-		//对strSecond所有的%进行转义
-		szPos = strSecond.find('%');
-		while (szPos != std::string::npos)
+		else
 		{
-			++szPos;//查看下一个字符
-			if (strSecond[szPos] == '%')//双重%%
-			{
-				strSecond.erase(szPos);
-			}
-
-
-			szPos = strSecond.find('%', szPos);//从当前位置继续找
+			szCutPos = strSource.length();//末尾索引
 		}
-		strSecond.push_back(' ');//末尾插入一个空格
 	}
 public:
 	Record_Draw(Record &_csRecord, const File &_File, OutputConsole &_csConsole) :
-		csRecord(_csRecord), stSymbol{_File.stSymbol}, strFirst(), strSecond(), csConsole(_csConsole)
+		csRecord(_csRecord), csConsole(_csConsole)
 	{
-		EscapeStr(stSymbol.strOutput, strFirst, strSecond);
+		for (size_t i = 0; i < RECORD_SYMBOL_COUNT; ++i)
+		{
+			stSymbol[i] = _File.stSymbol[i];
+			EscapeStr(stSymbol[i].strOutput, szCutPos[i]);
+		}
 	}
 
 	const File GetFile(void)
@@ -280,41 +279,100 @@ public:
 	}
 
 public:
-	Record_Draw(Record &_csRecord, const Symbol &_stSymbol, OutputConsole &_csConsole) :
-		csRecord(_csRecord), stSymbol(_stSymbol), strFirst(), strSecond(), csConsole(_csConsole)
+	Record_Draw(Record &_csRecord, const Symbol *_pstSymbol, OutputConsole &_csConsole) :
+		csRecord(_csRecord), csConsole(_csConsole)
 	{
-		EscapeStr(stSymbol.strOutput, strFirst, strSecond);
+		for (size_t i = 0; i < RECORD_SYMBOL_COUNT; ++i)
+		{
+			stSymbol[i] = _pstSymbol[i];
+			EscapeStr(stSymbol[i].strOutput, szCutPos[i]);
+		}
 	}
 
 	~Record_Draw(void) = default;
 
-	void SetSymbol(const Symbol &_stSymbol)
+	void SetSymbol(const Symbol *_pstSymbol)
 	{
-		stSymbol = _stSymbol;
-		EscapeStr(stSymbol.strOutput, strFirst, strSecond);
+		for (size_t i = 0; i < RECORD_SYMBOL_COUNT; ++i)
+		{
+			stSymbol[i] = _pstSymbol[i];
+			EscapeStr(stSymbol[i].strOutput, szCutPos[i]);
+		}
 	}
 
 	const Symbol *GetSymbol(void) const
 	{
-		return &stSymbol;
+		return stSymbol;
 	}
 
-	void Draw(const OutputConsole::CursorPos &stDrawPos = {0,0})
+	void DrawRecordCurrent(const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
 		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
 
 		csConsole.SetCursorPos(stDrawPos);
 
-		csConsole.SetColor(stSymbol.ucTextColor);//输出前半段
-		csConsole.WriteBuffer(strFirst.c_str(), strFirst.length());
+		csConsole.SetColor(stSymbol[SymbolCurrent].ucTextColor);//输出前半段
+		csConsole.WriteBuffer(&stSymbol[SymbolCurrent].strOutput[0], szCutPos[SymbolCurrent] - 1);
 
-		csConsole.SetColor(stSymbol.ucNumbColor);//输出数值
+		csConsole.SetColor(stSymbol[SymbolCurrent].ucNumbColor);//输出数值
 		char strNumb[21];
 		int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.Current());//转换
 		csConsole.WriteBuffer(strNumb, iNumbLen);//输出
 
-		csConsole.SetColor(stSymbol.ucTextColor);//输出后半段
-		csConsole.WriteBuffer(strSecond.c_str(), strSecond.length());
+		csConsole.SetColor(stSymbol[SymbolCurrent].ucTextColor);//输出后半段
+		csConsole.WriteBuffer(&stSymbol[SymbolCurrent].strOutput[szCutPos[SymbolCurrent]],
+			stSymbol[SymbolCurrent].strOutput.length() - szCutPos[SymbolCurrent]);
+
+		csConsole.SetColor(OldColor);//恢复颜色
+	}
+
+	void DrawRecordRanking(const OutputConsole::CursorPos &stDrawPos = {0,0})
+	{
+		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+
+		csConsole.SetCursorPos(stDrawPos);
+
+		csConsole.SetColor(stSymbol[SymbolRanking].ucTextColor);//输出前半段
+		csConsole.WriteBuffer(&stSymbol[SymbolRanking].strOutput[0], szCutPos[SymbolRanking] - 1);
+
+		csConsole.SetColor(stSymbol[SymbolRanking].ucNumbColor);//输出数值
+		char strNumb[21];
+		int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.Ranking());//转换
+		csConsole.WriteBuffer(strNumb, iNumbLen);//输出
+
+		csConsole.SetColor(stSymbol[SymbolRanking].ucTextColor);//输出后半段
+		csConsole.WriteBuffer(&stSymbol[SymbolRanking].strOutput[szCutPos[SymbolRanking]],
+			stSymbol[SymbolRanking].strOutput.length() - szCutPos[SymbolRanking]);
+
+		csConsole.SetColor(OldColor);//恢复颜色
+	}
+
+	void DrawRecordRankingList(const OutputConsole::CursorPos &stDrawPos = {0,0}, size_t szNewLine = 2)
+	{
+		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+
+		csConsole.SetCursorPos(stDrawPos);
+
+		for (size_t i = 0, j = 0; i < RECORD_SYMBOL_COUNT; ++i, ++j)
+		{
+			csConsole.SetColor(stSymbol[SymbolRankingList].ucTextColor);//输出前半段
+			csConsole.WriteBuffer(&stSymbol[SymbolRankingList].strOutput[0], szCutPos[SymbolRankingList] - 1);
+
+			csConsole.SetColor(stSymbol[SymbolRankingList].ucNumbColor);//输出数值
+			char strNumb[21];
+			int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.RankingList(i));//转换
+			csConsole.WriteBuffer(strNumb, iNumbLen);//输出
+
+			csConsole.SetColor(stSymbol[SymbolRankingList].ucTextColor);//输出后半段
+			csConsole.WriteBuffer(&stSymbol[SymbolRankingList].strOutput[szCutPos[SymbolRankingList]],
+				stSymbol[SymbolRankingList].strOutput.length() - szCutPos[SymbolRankingList]);
+
+			if (j == szNewLine - 1)//如果szNewLine为0则环绕，变成最大数
+			{
+				csConsole.WriteBuffer("\n", sizeof("\n") - 1);//换行
+				j = 0;//重置
+			}
+		}
 
 		csConsole.SetColor(OldColor);//恢复颜色
 	}
