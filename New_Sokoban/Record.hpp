@@ -3,11 +3,11 @@
 #include <algorithm>
 //统计分数，最高记录
 
-#define HISTROY_COUNT 10
-
 class Record//记录每一局的分数和最高分数的前十名  分数就是操作步数，越大排名越低
 {
 public:
+	static constexpr size_t HISTROY_COUNT = 10;
+	static constexpr size_t szUnvalid = (size_t)-1;//用于判断分数是否有效
 
 	struct File
 	{
@@ -19,32 +19,21 @@ private:
 	size_t szRanking;//当前排名 1 ~ HISTROY_COUNT
 	size_t szHistroy[HISTROY_COUNT];//历史分数
 
-	//计算排名
-	void CalculateRanking(void)
+	//名次前移
+	inline void ForwardRanking(void)
 	{
-		while (szRanking >= 1 && szRanking <= HISTROY_COUNT)//1 ~ HISTROY_COUNT名
+		while (szRanking > 1 && szCurrent < szHistroy[szRanking - 1])
 		{
-			if (szCurrent > szHistroy[szRanking - 1])//名次后移
-			{
-				++szRanking;
-			}
-			else if (szCurrent < szHistroy[szRanking - 1])//名次前移
-			{
-				--szRanking;
-			}
-			else//名称相等，不变
-			{
-				break;
-			}
+			--szRanking;
 		}
+	}
 
-		if (szRanking < 1)//比第一名还低就是第一名
+	//名次后移
+	inline void BackwardRanking(void)
+	{
+		while (szRanking < HISTROY_COUNT && szCurrent > szHistroy[szRanking - 1])
 		{
-			szRanking = 1;
-		}
-		else if (szRanking > HISTROY_COUNT)//比最后一名还高就是最后一名
-		{
-			szRanking = HISTROY_COUNT;
+			++szRanking;
 		}
 	}
 
@@ -65,7 +54,7 @@ public:
 		//排序
 		sort();
 		//计算排名
-		CalculateRanking();
+		BackwardRanking();
 	}
 
 	const File GetFile(void)
@@ -89,11 +78,11 @@ public:
 		}
 		else
 		{
-			std::fill(std::begin(szHistroy), std::end(szHistroy), szUnValid);//无效分数，初始化为szUnValid
+			std::fill(std::begin(szHistroy), std::end(szHistroy), szUnvalid);//无效分数，初始化为szUnvalid
 		}
 
 		//计算排名
-		CalculateRanking();
+		BackwardRanking();
 	}
 
 	~Record(void) = default;
@@ -102,9 +91,7 @@ public:
 	{
 		//递增
 		++szCurrent;
-		//计算排名
-		CalculateRanking();
-
+		BackwardRanking();
 		return *this;
 	}
 
@@ -112,17 +99,29 @@ public:
 	{
 		//递减
 		--szCurrent;
-		//计算排名
-		CalculateRanking();
-
+		ForwardRanking();
 		return *this;
 	}
-
-	static constexpr size_t szUnValid = (size_t)-1;//用于判断分数是否有效
 
 	size_t Histroy(size_t szPos) const
 	{
 		return szHistroy[szPos];
+	}
+
+	size_t CurrentInHistroy(size_t szPos) const
+	{
+		if (szPos < szRanking - 1)
+		{
+			return szHistroy[szPos];
+		}
+		else if (szPos > szRanking - 1)
+		{
+			return szHistroy[szPos + 1];
+		}
+		else
+		{
+			return szCurrent;
+		}
 	}
 
 	size_t Ranking(void) const

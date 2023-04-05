@@ -126,7 +126,11 @@ int main(void)
 	};
 	Player_Draw prdraw(player, pym, optc);
 
-	Record_Draw rcdraw(record, "步数%r", OutputConsole::bright_white, OutputConsole::bright_yellow, optc);
+	Record_Draw::Symbol rym =
+	{
+		"步数%r", OutputConsole::bright_white, OutputConsole::bright_yellow,
+	};
+	Record_Draw rcdraw(record, rym, optc);
 
 	ps rgp =
 	{
@@ -164,7 +168,7 @@ int main(void)
 	if (ir.Loop() == 1)
 	{
 		optc.SetCursorPos(0, 17);
-		printf("you win!");
+		printf("通关！");
 		return 1;
 	}
 	

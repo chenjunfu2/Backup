@@ -255,7 +255,7 @@ class Player_Draw_File
 {
 	static bool WriteFile(FILE *fpWrite, const Player_Draw::File &stPlayerDrawFile)
 	{
-		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
+		for (long i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
 		{
 			//写入符号类的所有成员
 			if (!WriteFileWithGeneralEndian(fpWrite, stPlayerDrawFile.stSymbol[i].cStr) ||
@@ -270,7 +270,7 @@ class Player_Draw_File
 
 	static bool ReadFile(FILE *fpRead, Player_Draw::File &stPlayerDrawFile)
 	{
-		for (long i = 0; i < PLAYER_SYMBOL_COUNT; ++i)
+		for (long i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
 		{
 			//读取符号类的所有成员
 			if (!ReadFileWithGeneralEndian(fpRead, stPlayerDrawFile.stSymbol[i].cStr) ||
@@ -325,7 +325,7 @@ class Map_Draw_File
 public:
 	static bool WriteFile(FILE *fpWrite, const Map_Draw::File &stMapDrawFile)
 	{
-		for (long i = 0; i < MAP_SYMBOL_COUNT; ++i)
+		for (long i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
 		{
 			//写入符号类的所有成员
 			if (!WriteFileWithGeneralEndian(fpWrite, stMapDrawFile.stSymbol[i].cStr) ||
@@ -340,7 +340,7 @@ public:
 
 	static bool ReadFile(FILE *fpRead, Map_Draw::File &stMapDrawFile)
 	{
-		for (long i = 0; i < MAP_SYMBOL_COUNT; ++i)
+		for (long i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
 		{
 			//读取符号类的所有成员
 			if (!ReadFileWithGeneralEndian(fpRead, stMapDrawFile.stSymbol[i].cStr) ||
@@ -360,10 +360,20 @@ class Record_File
 {
 public:
 	static bool WriteFile(FILE *fpWrite, const Record::File &stControlFile)
-	{}
+	{
+		
+		
+		
+	}
 
 	static bool ReadFile(FILE *fpRead, Record::File &stControlFile)
-	{}
+	{
+		
+		
+		
+		
+		
+	}
 };
 
 //最高纪录符号数据读写类

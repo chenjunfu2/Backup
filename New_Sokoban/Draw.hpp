@@ -12,12 +12,12 @@
 
 #include "Map.hpp"
 
-#define MAP_SYMBOL_COUNT 5
-#define MAP_SYMBOL_LEN 2
-
 class Map_Draw//地图绘制
 {
 public:
+	static constexpr size_t MAP_SYMBOL_COUNT = 5;
+	static constexpr size_t MAP_SYMBOL_LEN = 2;
+
 	struct Symbol
 	{
 		char cStr[MAP_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
@@ -124,12 +124,12 @@ public:
 
 #include "Player.hpp"
 
-#define PLAYER_SYMBOL_COUNT 2
-#define PLAYER_SYMBOL_LEN 2
-
 class Player_Draw//玩家绘制
 {
 public:
+	static constexpr size_t PLAYER_SYMBOL_COUNT = 2;
+	static constexpr size_t PLAYER_SYMBOL_LEN = 2;
+
 	struct Symbol
 	{
 		char cStr[PLAYER_SYMBOL_LEN + 1];//每种字符占用2个字节，用于输出符号
@@ -189,7 +189,7 @@ public:
 	}
 };
 
-//显示分数的颜色、历史最高纪录的个数等
+//显示带颜色的颜色分数、历史最高纪录（排行榜）、排名
 #include <string>
 #include "Record.hpp"
 class Record_Draw
@@ -280,8 +280,8 @@ public:
 	}
 
 public:
-	Record_Draw(Record &_csRecord, const std::string _strOutput, OutputConsole::Color _ucTextColor, OutputConsole::Color _ucNumbColor, OutputConsole &_csConsole) :
-		csRecord(_csRecord), stSymbol{_strOutput,_ucTextColor,_ucNumbColor}, strFirst(), strSecond(), csConsole(_csConsole)
+	Record_Draw(Record &_csRecord, const Symbol &_stSymbol, OutputConsole &_csConsole) :
+		csRecord(_csRecord), stSymbol(_stSymbol), strFirst(), strSecond(), csConsole(_csConsole)
 	{
 		EscapeStr(stSymbol.strOutput, strFirst, strSecond);
 	}
