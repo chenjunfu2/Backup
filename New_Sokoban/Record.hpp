@@ -22,7 +22,7 @@ private:
 	//名次前移
 	inline void ForwardRanking(void)
 	{
-		while (szRanking > 1 && szCurrent < szHistroy[szRanking - 1])
+		while (szRanking > 1 && szCurrent < szHistroy[szRanking - 2])
 		{
 			--szRanking;
 		}
@@ -67,19 +67,25 @@ public:
 		return RetFile;
 	}
 public:
-	Record(size_t _szCurrent, const size_t *_szpHistroy) :szCurrent(_szCurrent), szRanking(1), szHistroy{0}
+	Record(size_t _szCurrent, const size_t *_szpHistroy, size_t szHistroyCount = HISTROY_COUNT) : szCurrent(_szCurrent), szRanking(1), szHistroy{0}
 	{
-		if (_szpHistroy != nullptr)
+		if (_szpHistroy == nullptr)//全部无效
 		{
-			//拷贝
-			memcpy(szHistroy, _szpHistroy, sizeof(szHistroy));
-			//排序
-			sort();
+			std::fill(std::begin(szHistroy), std::end(szHistroy), szUnvalid);//初始化为szUnvalid
+			return;
 		}
-		else
+		
+		//拷贝有效部分
+		size_t szCount = szHistroyCount >= HISTROY_COUNT ? HISTROY_COUNT : szHistroyCount;
+		for (size_t i = 0; i < szCount; ++i)
 		{
-			std::fill(std::begin(szHistroy), std::end(szHistroy), szUnvalid);//无效分数，初始化为szUnvalid
+			szHistroy[i] = _szpHistroy[i];
 		}
+		//无效部分，初始化为szUnvalid
+		std::fill(std::begin(szHistroy) + szCount, std::end(szHistroy), szUnvalid);
+
+		//排序
+		sort();
 
 		//计算排名
 		BackwardRanking();
@@ -104,21 +110,21 @@ public:
 	}
 
 	//历史记录
-	size_t Histroy(size_t szPos) const
+	size_t HistroyList(size_t szPos) const
 	{
 		return szHistroy[szPos];
 	}
 
-	//排行榜
+	//排行榜输入1 ~ HISTROY_COUNT
 	size_t RankingList(size_t szPos) const
 	{
-		if (szPos < szRanking - 1)
+		if (szPos < szRanking)
 		{
-			return szHistroy[szPos];
+			return szHistroy[szPos - 1];
 		}
-		else if (szPos > szRanking - 1)
+		else if (szPos > szRanking)
 		{
-			return szHistroy[szPos + 1];
+			return szHistroy[szPos - 2];
 		}
 		else
 		{

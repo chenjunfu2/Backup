@@ -81,6 +81,40 @@ public:
 		return dwWrittenLen;
 	}
 
+	DWORD UnrecoveredColorWriteBuffer(Color ucColor, const char *cpBuffer, DWORD dwWriteLen)
+	{
+		if (!SetColor(ucColor))
+		{
+			return 0;
+		}
+		return WriteBuffer(cpBuffer, dwWriteLen);
+	}
+
+	DWORD RecoveredColorWriteBuffer(Color ucColor, const char *cpBuffer, DWORD dwWriteLen)
+	{
+		Color ucOriginalColor = GetColor();
+		DWORD dwWrittenLen = UnrecoveredColorWriteBuffer(ucColor, cpBuffer, dwWriteLen);
+		SetColor(ucOriginalColor);
+		return dwWrittenLen;
+	}
+
+	DWORD UnrecoveredCursorPosWriteBuffer(const CursorPos &stPos, const char *cpBuffer, DWORD dwWriteLen)
+	{
+		if (!SetCursorPos(stPos))
+		{
+			return 0;
+		}
+		return WriteBuffer(cpBuffer, dwWriteLen);
+	}
+
+	DWORD RecoveredCursorPosWriteBuffer(const CursorPos &stPos, const char *cpBuffer, DWORD dwWriteLen)
+	{
+		CursorPos stOriginalPos = GetCursorPos();
+		DWORD dwWrittenLen = UnrecoveredCursorPosWriteBuffer(stPos, cpBuffer, dwWriteLen);
+		SetCursorPos(stOriginalPos);
+		return dwWrittenLen;
+	}
+
 	DWORD ClearBuffer(void)
 	{
 		CONSOLE_SCREEN_BUFFER_INFO stOutputConsoleInfo;
@@ -102,7 +136,7 @@ public:
 	//设置光标坐标
 	bool SetCursorPos(SHORT x, SHORT y)
 	{
-		return SetConsoleCursorPosition(hOutputConsole, COORD{x, y});//同步到控制台(Set设置)（Console控制台）（Cursor光标） （Position位置）
+		return SetCursorPos(CursorPos{x,y});
 	}
 
 	bool SetCursorPos(const CursorPos &stPos)

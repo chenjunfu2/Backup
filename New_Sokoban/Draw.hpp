@@ -305,76 +305,114 @@ public:
 		return stSymbol;
 	}
 
-	void DrawRecordCurrent(const OutputConsole::CursorPos &stDrawPos = {0,0})
+
+	static inline void DrawTextAndValue(OutputConsole &csConsole, const Symbol &stDrawSymbol, size_t szDrawCutPos, size_t szDrawValue)
 	{
-		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+		//输出前半段
+		csConsole.UnrecoveredColorWriteBuffer(stDrawSymbol.ucTextColor, &stDrawSymbol.strOutput[0], szDrawCutPos - 1);
 
-		csConsole.SetCursorPos(stDrawPos);
-
-		csConsole.SetColor(stSymbol[SymbolCurrent].ucTextColor);//输出前半段
-		csConsole.WriteBuffer(&stSymbol[SymbolCurrent].strOutput[0], szCutPos[SymbolCurrent] - 1);
-
-		csConsole.SetColor(stSymbol[SymbolCurrent].ucNumbColor);//输出数值
+		//输出数值
 		char strNumb[21];
-		int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.Current());//转换
-		csConsole.WriteBuffer(strNumb, iNumbLen);//输出
+		int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", szDrawValue);
+		csConsole.UnrecoveredColorWriteBuffer(stDrawSymbol.ucNumbColor, strNumb, iNumbLen);
 
-		csConsole.SetColor(stSymbol[SymbolCurrent].ucTextColor);//输出后半段
-		csConsole.WriteBuffer(&stSymbol[SymbolCurrent].strOutput[szCutPos[SymbolCurrent]],
-			stSymbol[SymbolCurrent].strOutput.length() - szCutPos[SymbolCurrent]);
+		//输出后半段
+		csConsole.UnrecoveredColorWriteBuffer(stDrawSymbol.ucTextColor, &stDrawSymbol.strOutput[szDrawCutPos], stDrawSymbol.strOutput.length() - szDrawCutPos);
+	}
 
-		csConsole.SetColor(OldColor);//恢复颜色
+
+	void DrawRecordCurrent(const OutputConsole::CursorPos &stDrawPos = {0,0}) const
+	{
+		OutputConsole::Color ucOldColor = csConsole.GetColor();//保存颜色
+
+		//设置光标并输出
+		csConsole.SetCursorPos(stDrawPos);
+		DrawTextAndValue(csConsole, stSymbol[SymbolCurrent], szCutPos[SymbolCurrent], csRecord.Current());
+
+		csConsole.SetColor(ucOldColor);//恢复颜色
 	}
 
 	void DrawRecordRanking(const OutputConsole::CursorPos &stDrawPos = {0,0})
 	{
-		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+		OutputConsole::Color ucOldColor = csConsole.GetColor();//保存颜色
 
+		//设置光标并输出
 		csConsole.SetCursorPos(stDrawPos);
+		DrawTextAndValue(csConsole, stSymbol[SymbolRanking], szCutPos[SymbolRanking], csRecord.Ranking());
 
-		csConsole.SetColor(stSymbol[SymbolRanking].ucTextColor);//输出前半段
-		csConsole.WriteBuffer(&stSymbol[SymbolRanking].strOutput[0], szCutPos[SymbolRanking] - 1);
-
-		csConsole.SetColor(stSymbol[SymbolRanking].ucNumbColor);//输出数值
-		char strNumb[21];
-		int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.Ranking());//转换
-		csConsole.WriteBuffer(strNumb, iNumbLen);//输出
-
-		csConsole.SetColor(stSymbol[SymbolRanking].ucTextColor);//输出后半段
-		csConsole.WriteBuffer(&stSymbol[SymbolRanking].strOutput[szCutPos[SymbolRanking]],
-			stSymbol[SymbolRanking].strOutput.length() - szCutPos[SymbolRanking]);
-
-		csConsole.SetColor(OldColor);//恢复颜色
+		csConsole.SetColor(ucOldColor);//恢复颜色
 	}
 
 	void DrawRecordRankingList(const OutputConsole::CursorPos &stDrawPos = {0,0}, size_t szNewLine = 2)
 	{
-		OutputConsole::Color OldColor = csConsole.GetColor();//保存颜色
+		OutputConsole::Color ucOldColor = csConsole.GetColor();//保存颜色
 
+		auto atCurrentY = stDrawPos.y;//保存y值
 		csConsole.SetCursorPos(stDrawPos);
 
-		for (size_t i = 0, j = 0; i < RECORD_SYMBOL_COUNT; ++i, ++j)
+		for (size_t i = 1, j = 1; i <= Record::HISTROY_COUNT; ++i)
 		{
-			csConsole.SetColor(stSymbol[SymbolRankingList].ucTextColor);//输出前半段
-			csConsole.WriteBuffer(&stSymbol[SymbolRankingList].strOutput[0], szCutPos[SymbolRankingList] - 1);
-
-			csConsole.SetColor(stSymbol[SymbolRankingList].ucNumbColor);//输出数值
-			char strNumb[21];
-			int iNumbLen = snprintf(strNumb, sizeof(strNumb), "%zu", csRecord.RankingList(i));//转换
-			csConsole.WriteBuffer(strNumb, iNumbLen);//输出
-
-			csConsole.SetColor(stSymbol[SymbolRankingList].ucTextColor);//输出后半段
-			csConsole.WriteBuffer(&stSymbol[SymbolRankingList].strOutput[szCutPos[SymbolRankingList]],
-				stSymbol[SymbolRankingList].strOutput.length() - szCutPos[SymbolRankingList]);
-
-			if (j == szNewLine - 1)//如果szNewLine为0则环绕，变成最大数
+			if (csRecord.RankingList(i) != Record::szUnvalid)
 			{
-				csConsole.WriteBuffer("\n", sizeof("\n") - 1);//换行
-				j = 0;//重置
+				//输出名次
+				DrawTextAndValue(csConsole, stSymbol[SymbolRanking], szCutPos[SymbolRanking], i);
+				csConsole.MoveCursorPos(-1, 0);//左移一格吃掉空格
+				//输出排行
+				DrawTextAndValue(csConsole, stSymbol[SymbolRankingList], szCutPos[SymbolRankingList], csRecord.RankingList(i));
+			}
+			else
+			{
+				break;
+			}
+
+			if (j == szNewLine)
+			{
+				csConsole.SetCursorPos(stDrawPos.x, ++atCurrentY);//换行
+				j = 1;//重置
+			}
+			else
+			{
+				++j;
 			}
 		}
 
-		csConsole.SetColor(OldColor);//恢复颜色
+		csConsole.SetColor(ucOldColor);//恢复颜色
+	}
+
+	void DrawRecordHistroyList(const OutputConsole::CursorPos &stDrawPos = {0,0}, size_t szNewLine = 2)
+	{
+		OutputConsole::Color ucOldColor = csConsole.GetColor();//保存颜色
+
+		auto atCurrentY = stDrawPos.y;//保存y值
+		csConsole.SetCursorPos(stDrawPos);
+
+		for (size_t i = 1, j = 1; i < Record::HISTROY_COUNT; ++i)
+		{
+			if (csRecord.HistroyList(i) != Record::szUnvalid)
+			{
+				//输出名次
+				DrawTextAndValue(csConsole, stSymbol[SymbolRanking], szCutPos[SymbolRanking], i);
+				csConsole.MoveCursorPos(-1, 0);//左移一格吃掉空格
+				//输出排行
+				DrawTextAndValue(csConsole, stSymbol[SymbolRankingList], szCutPos[SymbolRankingList], csRecord.HistroyList(i));
+			}
+			else
+			{
+				break;
+			}
+
+			if (j == szNewLine)
+			{
+				csConsole.SetCursorPos(stDrawPos.x, ++atCurrentY);//换行
+				j = 1;//重置
+			}
+			else
+			{
+				++j;
+			}
+		}
+
+		csConsole.SetColor(ucOldColor);//恢复颜色
 	}
 };
 

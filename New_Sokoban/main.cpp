@@ -18,65 +18,57 @@ struct ps
 };
 
 
-void move_draw(ps &stps, long lXMove, long lYMove)
+inline void move_draw(ps &stps, bool bMove)
 {
-	if (stps.gec.MovePlayer(lXMove, lYMove))
+	if (bMove)
 	{
 		stps.mpd.CrossDrawMap(stps.pr.x, stps.pr.y);
 		stps.prd.DrawPlayer({0,0});
 		stps.rcd.DrawRecordCurrent({0,16});
+		stps.rcd.DrawRecordRanking({0,17});
+		stps.rcd.DrawRecordRankingList({0,20});
 	}
 }
 
 long fcw(void * p)
 {
 	ps &stps = *(ps *)p;
-	move_draw(stps, 0, -1);
+	move_draw(stps, stps.gec.MovePlayer(0, -1));
 	return stps.gec.IsWin();
 }
 
 long fca(void *p)
 {
 	ps &stps = *(ps *)p;
-	move_draw(stps, -1, 0);
+	move_draw(stps, stps.gec.MovePlayer(-1, 0));
 	return stps.gec.IsWin();
 }
 
 long fcs(void *p)
 {
 	ps &stps = *(ps *)p;
-	move_draw(stps, 0, 1);
+	move_draw(stps, stps.gec.MovePlayer(0, 1));
 	return stps.gec.IsWin();
 }
 
 long fcd(void *p)
 {
 	ps &stps = *(ps *)p;
-	move_draw(stps, 1, 0);
+	move_draw(stps, stps.gec.MovePlayer(1, 0));
 	return stps.gec.IsWin();
 }
 
 long fcr(void *p)
 {
 	ps &stps = *(ps *)p;
-	if (stps.gec.UndoMove())
-	{
-		stps.mpd.CrossDrawMap(stps.pr.x, stps.pr.y);
-		stps.prd.DrawPlayer({0,0});
-		stps.rcd.DrawRecordCurrent({0,16});
-	}
+	move_draw(stps, stps.gec.UndoMove());
 	return 0;
 }
 
 long fcf(void *p)
 {
 	ps &stps = *(ps *)p;
-	if (stps.gec.RedoMove())
-	{
-		stps.mpd.CrossDrawMap(stps.pr.x, stps.pr.y);
-		stps.prd.DrawPlayer({0,0});
-		stps.rcd.DrawRecordCurrent({0,16});
-	}
+	move_draw(stps, stps.gec.RedoMove());
 	return 0;
 }
 
@@ -102,10 +94,10 @@ int main(void)
 		{2,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1},
 	};
 	
-	size_t szrcd[10] = {1,2,3,4,5,6,7,8,9,10};
+	size_t szrcd[] = {201,82,90,119};
 	Map map((Map::Block *)mb, 16, 15);
 	Player player(5, 5);
-	Record record(0, szrcd);
+	Record record(0, szrcd, sizeof(szrcd) / sizeof(*szrcd));
 	Game_Control gamectl(map, player, record);
 	optc.SetCursorShow(false);
 
@@ -130,7 +122,7 @@ int main(void)
 	{
 		"第%r步", OutputConsole::bright_white, OutputConsole::bright_yellow,
 		"第%r名", OutputConsole::bright_white, OutputConsole::bright_yellow,
-		"%r步", OutputConsole::bright_white, OutputConsole::bright_yellow,
+		":%r步", OutputConsole::bright_white, OutputConsole::bright_yellow,
 	};
 	Record_Draw rcdraw(record, rym, optc);
 
@@ -146,6 +138,8 @@ int main(void)
 	mpdraw.DrawMap({0,0});
 	prdraw.DrawPlayer({0,0});
 	rcdraw.DrawRecordCurrent({0,16});
+	rcdraw.DrawRecordRanking({0,17});
+	rcdraw.DrawRecordRankingList({0,20});
 
 	Interaction ir;
 
