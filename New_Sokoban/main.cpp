@@ -94,7 +94,7 @@ int main(void)
 		{2,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1},
 	};
 	
-	size_t szrcd[] = {201,82,90,119};
+	size_t szrcd[] = {201,82,90,119,157};
 	Map map((Map::Block *)mb, 16, 15);
 	Player player(5, 5);
 	Record record(0, szrcd, sizeof(szrcd) / sizeof(*szrcd));

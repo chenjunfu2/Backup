@@ -6,23 +6,42 @@
 
 #include <new>
 
-//文件头验证类
-class File_Head_Verify
+//文件头类
+class File_Head
 {
 public:
-	enum Type
+	enum Type :unsigned char
 	{
-		Unknow = 0,
+		Sokoban_Unknow = 0,
 		Sokoban_Level,
 		Sokoban_Config,
 		Sokoban_PlayBack,
 		Sokoban_Progress,
 	};
-public:
-	static Type GetFileType(FILE * fpRead)
+
+	struct File_Info
 	{
-		char cReadStr[32];//0~30 输入字符 31 '\0'
-		for (long i = 0; i < 31; ++i)
+		Type enFileType;
+		size_t szFileVersion;
+	};
+private:
+	static inline const char *const FileHeadStr[] = 
+	{
+		"Sokoban_Unknow",
+		"Sokoban_Level",
+		"Sokoban_PlayBack",
+		"Sokoban_Progress",
+		"Sokoban_Config"
+	};
+
+	static constexpr size_t READ_STRLEN = 32;
+public:
+	static bool ReadFile(FILE *fpRead, File_Info &stFileInfo)
+	{
+		stFileInfo = {Sokoban_Unknow,0};//重置
+
+		char cReadStr[READ_STRLEN];//0~30 输入字符 31 '\0'
+		for (size_t i = 0; i < READ_STRLEN - 1; ++i)
 		{
 			cReadStr[i] = fgetc(fpRead);
 			if (cReadStr[i] == '\0')
@@ -30,49 +49,61 @@ public:
 				break;
 			}
 		}
-		cReadStr[31] = '\0';
+		cReadStr[READ_STRLEN - 1] = '\0';
 
-		//比较开头
-		constexpr char cBaseStr[] = "Sokoban_";
-		constexpr size_t cBaseStrLen = sizeof(cBaseStr) - 1;
+		//比较前缀
+		static constexpr char cBaseStr[] = "Sokoban_";
+		static constexpr size_t cBaseStrLen = sizeof(cBaseStr) - 1;
 		static_assert(sizeof(cBaseStr) < sizeof(cReadStr) - 1);
 
 		if (strncmp(cReadStr, cBaseStr, cBaseStrLen) != 0)
 		{
-			return Unknow;
-		}
-		
-		//比较接下来的内容
-		switch (cReadStr[cBaseStrLen])
-		{
-		case 'L':
-			if (strcmp("Level" + 1, &cReadStr[cBaseStrLen + 1]) == 0)
-			{
-				return Sokoban_Level;
-			}
-			break;
-		case 'C':
-			if (strcmp("Config" + 1, &cReadStr[cBaseStrLen + 1]) == 0)
-			{
-				return Sokoban_Config;
-			}
-			break;
-		case 'P':
-			if (strcmp("PlayBack" + 1, &cReadStr[cBaseStrLen + 1]) == 0)
-			{
-				return Sokoban_PlayBack;
-			}
-			else if (strcmp("Progress" + 1, &cReadStr[cBaseStrLen + 1]) == 0)
-			{
-				return Sokoban_Progress;
-			}
-			break;
-		default:
-			return Unknow;
-			break;
+			return false;
 		}
 
-		return Unknow;
+		//比较后缀，通过与列表项依次比较获得实际文件类型枚举
+		for (Type i = Sokoban_Level; i <= Sokoban_Config; i = (Type)(i + 1))
+		{
+			if (strcmp(&FileHeadStr[i][cBaseStrLen], &cReadStr[cBaseStrLen]) == 0)
+			{
+				stFileInfo.enFileType = i;
+			}
+		}
+
+		//如果都不属于则返回失败
+		if (stFileInfo.enFileType == Sokoban_Unknow)
+		{
+			return false;
+		}
+
+		//读入版本号
+		uint64_t u64Read;
+		if (!ReadFileWithGeneralEndian(fpRead, u64Read))
+		{
+			return false;
+		}
+		stFileInfo.szFileVersion = u64Read;
+
+		return true;
+	}
+
+	static bool WriteFile(FILE *fpWrite, const File_Info &stFileInfo)
+	{
+		//写入类型字符串
+		if (!WriteFileWithGeneralEndian(fpWrite, FileHeadStr[stFileInfo.enFileType],
+			strlen(FileHeadStr[stFileInfo.enFileType])))//不写入末尾\0
+		{
+			return false;
+		}
+
+		//写入版本号
+		uint64_t u64Write = stFileInfo.szFileVersion;
+		if (!WriteFileWithGeneralEndian(fpWrite, u64Write))
+		{
+			return false;
+		}
+		
+		return true;
 	}
 };
 
@@ -111,7 +142,7 @@ class Player_Draw_File
 {
 	static bool WriteFile(FILE *fpWrite, const Player_Draw::File &stPlayerDrawFile)
 	{
-		for (long i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
+		for (size_t i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
 		{
 			//写入符号类的所有成员
 			if (!WriteFileWithGeneralEndian(fpWrite, stPlayerDrawFile.stSymbol[i].cStr) ||
@@ -126,7 +157,7 @@ class Player_Draw_File
 
 	static bool ReadFile(FILE *fpRead, Player_Draw::File &stPlayerDrawFile)
 	{
-		for (long i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
+		for (size_t i = 0; i < Player_Draw::PLAYER_SYMBOL_COUNT; ++i)
 		{
 			//读取符号类的所有成员
 			if (!ReadFileWithGeneralEndian(fpRead, stPlayerDrawFile.stSymbol[i].cStr) ||
@@ -181,7 +212,7 @@ class Map_Draw_File
 public:
 	static bool WriteFile(FILE *fpWrite, const Map_Draw::File &stMapDrawFile)
 	{
-		for (long i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
+		for (size_t i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
 		{
 			//写入符号类的所有成员
 			if (!WriteFileWithGeneralEndian(fpWrite, stMapDrawFile.stSymbol[i].cStr) ||
@@ -196,7 +227,7 @@ public:
 
 	static bool ReadFile(FILE *fpRead, Map_Draw::File &stMapDrawFile)
 	{
-		for (long i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
+		for (size_t i = 0; i < Map_Draw::MAP_SYMBOL_COUNT; ++i)
 		{
 			//读取符号类的所有成员
 			if (!ReadFileWithGeneralEndian(fpRead, stMapDrawFile.stSymbol[i].cStr) ||
@@ -217,32 +248,72 @@ class Record_File
 public:
 	static bool WriteFile(FILE *fpWrite, const Record::File &stControlFile)
 	{
+		if (!WriteFileWithGeneralEndian(fpWrite, stControlFile.u64Current) ||
+			!WriteFileWithGeneralEndian(fpWrite, stControlFile.u64Histroy))
+		{
+			return false;
+		}
 		
-		
-		
+		return true;
 	}
 
 	static bool ReadFile(FILE *fpRead, Record::File &stControlFile)
 	{
-		
-		
-		
-		
-		
+		if (!ReadFileWithGeneralEndian(fpRead, stControlFile.u64Current) ||
+			!ReadFileWithGeneralEndian(fpRead, stControlFile.u64Histroy))
+		{
+			return false;
+		}
+
+		return true;
 	}
 };
 
+#include "Draw.hpp"
 //最高纪录符号数据读写类
 class Record_Draw_File
 {
 public:
 	static bool WriteFile(FILE *fpWrite, const Record_Draw::File &stControlFile)
-	{}
+	{
+		for (size_t i = 0; i < Record_Draw::RECORD_SYMBOL_COUNT; ++i)
+		{
+			size_t szStrLength = stControlFile.stSymbol[i].strOutput.length();//获取字符串长度，不包括末尾\0
+
+			if (!WriteFileWithGeneralEndian(fpWrite, szStrLength) ||//写入字符串长度，不包括末尾\0
+				!WriteFileWithGeneralEndian(fpWrite, stControlFile.stSymbol[i].strOutput.data(), szStrLength) ||//写入字符串，不包括末尾\0
+				!WriteFileWithGeneralEndian(fpWrite, stControlFile.stSymbol[i].ucNumbColor) ||
+				!WriteFileWithGeneralEndian(fpWrite, stControlFile.stSymbol[i].ucTextColor))
+			{
+				return false;
+			}
+		}
+		
+		return true;
+	}
 
 	static bool ReadFile(FILE *fpRead, Record_Draw::File &stControlFile)
-	{}
-};
+	{
+		for (size_t i = 0; i < Record_Draw::RECORD_SYMBOL_COUNT; ++i)
+		{
+			size_t szStrLength;
+			if (!ReadFileWithGeneralEndian(fpRead, szStrLength))//读取字符串长度，不包括末尾\0
+			{
+				return false;
+			}
+			stControlFile.stSymbol[i].strOutput.resize(szStrLength);//预分配内存并改变string大小，方便后续直接读入
 
+			if (!ReadFileWithGeneralEndian(fpRead, stControlFile.stSymbol[i].strOutput.data(), szStrLength) ||//读入字符串，不包括末尾\0
+				!ReadFileWithGeneralEndian(fpRead, stControlFile.stSymbol[i].ucNumbColor) ||
+				!ReadFileWithGeneralEndian(fpRead, stControlFile.stSymbol[i].ucTextColor))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+};
 
 //游戏控制数据读写类
 #include "Control.hpp"
@@ -328,12 +399,22 @@ public:
 };
 
 
+/*
+以下所有文件读写例程都添加一个文件版本号
+写入时写入版本号
+读取时通过版本号调用该版本对应的读取函数，其余缺失的数据项使用默认行为
+
+如果版本号比当前程序最高版本号还高，则报错无法读取，否则读取并升级文件（如果版本低于当前最高版本的话）
+
+每个版本都有自己对应的读写函数
+*/
+
 #include "Level.hpp"
 //关卡文件
 class Level_File
 {
 private:
-	static constexpr char cpFileHead[] = "Sokoban_Level";
+
 public:
 	//玩家、地图、最高纪录(步数越少越高) Highest_Record
 
@@ -350,7 +431,7 @@ public:
 class Playback_File
 {
 private:
-	static constexpr char cpFileHead[] = "Sokoban_PlayBack";
+
 public:
 
 
@@ -365,7 +446,7 @@ public:
 class Progress_File
 {
 private:
-	static constexpr char cpFileHead[] = "Sokoban_Progress";
+
 public:
 
 
@@ -382,7 +463,7 @@ public:
 class Config_File
 {
 private:
-	static constexpr char cpFileHead[] = "Sokoban_Config";
+
 public:
 
 
