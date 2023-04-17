@@ -1,6 +1,6 @@
 ﻿#include <stdio.h>
 #include "Interaction.hpp"
-#include "Control.hpp"
+#include "Game_Control.hpp"
 #include "Draw.hpp"
 #include "Record.hpp"
 
