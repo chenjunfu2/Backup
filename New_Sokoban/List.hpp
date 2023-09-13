@@ -326,18 +326,21 @@ public:
 	//中间插入(在itpos指向的元素后插入)
 	Error InsertMid(const DataType &tData, Iterator &itPos)
 	{
-		Node *pInsert = itPos.pCurrent;//在这个位置后插入
+		Node *pInsertPrev = itPos.pCurrent;//在这个位置后插入
 		if (pInsert == nullptr)
 		{
 			return Error(true, 1, __FUNCTION__, "迭代器为空");
 		}
 
 		//分配并初始化
-		Node *pInsert = new(std::nothrow) Node{pInsert,pInsert->pNext,tData};
+		Node *pInsert = new(std::nothrow) Node{pInsertPrev,pInsertPrev->pNext,tData};
 		if (pInsert == nullptr)
 		{
 			return Error(true, 0, __FUNCTION__, "内存不足");
 		}
+
+		//设置插入点的下一个节点为新节点
+		pInsertPrev->pNext = pInsert;
 
 		//如果存在下一个节点，那么下一个节点的上一个节点为新节点
 		if (pInsert->pNext != nullptr)
@@ -348,9 +351,6 @@ public:
 		{
 			pTail = pInsert;//设置尾节点为新插入的节点
 		}
-
-		//设置插入点的下一个节点为新节点
-		pInsert->pNext = pInsert;
 
 		//递增元素计数
 		++szNodeNum;
